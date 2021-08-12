@@ -1,0 +1,23 @@
+apiVersion: katalog.m4d.ibm.com/v1alpha1
+kind: Asset
+metadata:
+  name: diabetes-json
+  namespace: mvp
+spec:
+  secretRef: 
+    name: diabetes-json
+  assetDetails:
+    dataFormat: json
+    connection:
+      type: kafka
+      kafka: 
+        topic_name: fhir-wp2
+        bootstrap_servers: "kafka:9092"
+  assetMetadata:
+    geography: UK
+    tags:
+    - healthcare
+    componentsMetadata:
+      id: 
+        tags:
+        - PII

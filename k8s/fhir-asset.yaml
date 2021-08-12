@@ -1,0 +1,27 @@
+apiVersion: katalog.m4d.ibm.com/v1alpha1
+kind: Asset
+metadata:
+  name: kafka-data
+  namespace: heir-mvp
+spec:
+  secretRef: 
+    name: heir-kafka-secret 
+  assetDetails:
+    dataFormat: json
+    connection:
+      type: kafka
+      kafka:
+        topic_name: fhir-wp2
+        bootstrap_servers: "localhost:9092"
+        schema_registry: "http://localhost:9088"
+        key_deserializer: "io.confluent.kafka.serializers.json.KafkaJsonSchemaDeserializer"
+        value_deserializer: "io.confluent.kafka.serializers.json.KafkaJsonSchemaDeserializer"
+  assetMetadata:
+    geography: UK
+    tags:
+    - health
+    componentsMetadata:
+      Id: 
+        tags:
+        - PII
+

@@ -1,0 +1,37 @@
+apiVersion: app.m4d.ibm.com/v1alpha1
+kind: M4DModule
+metadata:
+  name: heir-writer-module
+  labels:
+    name: heir-writer-module
+    version: 0.0.1  # semantic version
+  namespace: m4d-system
+spec:
+  chart:
+    name: 
+    values:
+      image.tag: v0.0.1
+  flows:
+    - read
+  capabilities:
+    actions:
+      - id: redact-ID
+        level: 2  # column
+    api:
+      protocol: s3
+      dataformat: csv
+    supportedInterfaces:
+    - flow: read
+      source:
+        protocol: s3
+        dataformat: parquet
+    - flow: read
+      source:
+        protocol: s3
+        dataformat: csv
+  statusIndicators:
+    - kind: heir-write-module
+      successCondition: status.status == SUCCEEDED
+      failureCondition: status.status == FAILED
+      errorMessage: status.error
+

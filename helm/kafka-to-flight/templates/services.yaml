@@ -1,0 +1,62 @@
+##################################################################################################
+# App service
+##################################################################################################
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.app.name }} 
+  labels:
+    app: {{ .Values.app.name }}  
+    service: {{ .Values.app.name }} 
+spec:
+  ports:
+  - port: {{ .Values.service.port }} 
+    name: https
+    targetPort: {{ .Values.app.port }} 
+  type: {{ .Values.service.type }}
+  selector:
+    app: {{ .Values.app.name }} 
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.app.name }} 
+  labels:
+    app: {{ .Values.app.name }} 
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.app.name }} 
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.app.name }} 
+    spec:
+{{- if .Values.persistence.enabled }}
+      volumes:
+        - name: {{ .Values.app.name }}-pv-storage
+          persistentVolumeClaim:
+            claimName: {{ .Values.app.name }}-pv-claim
+{{- end }}
+      containers:
+      - name: {{ .Values.app.name }}
+        image: {{ .Values.image.name }}  
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - name: https 
+          containerPort: {{ .Values.app.port }} 
+{{- if .Values.persistence.enabled }}
+        volumeMounts:
+          - mountPath: {{ .Values.persistence.mountpath | quote }}
+            name: {{ .Values.app.name }}-pv-storage
+{{- end }}
+        envFrom:
+        - configMapRef:
+            name: {{ .Values.configmap.name }}
+{{- if .Values.envs.enabled }}
+        env:
+          - name: {{ .Values.envs.name | quote }}
+            value: {{ .Values.envs.value | quote }}
+{{- end }}
+---

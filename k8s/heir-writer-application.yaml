@@ -1,0 +1,22 @@
+apiVersion: app.m4d.ibm.com/v1alpha1
+kind: M4DApplication
+metadata:
+  name: ingest
+  namespace: default
+spec:
+  selector:
+   workloadSelector:
+     matchLabels: {}
+  appInfo:
+    intent: Ingest
+    role: Data Owner
+  data:
+    - dataSetID: heir-mvp/kafka-data
+      requirements:
+        copy:
+          required: true
+          catalog:
+            catalogID: "ingest_test"
+        interface: 
+          protocol: s3
+          dataformat: parquet

@@ -1,0 +1,20 @@
+apiVersion: app.m4d.ibm.com/v1alpha1
+kind: M4DApplication
+metadata:
+  name: mvp-notebook
+  namespace: mvp
+  labels:
+    app: mvp-notebook
+spec:
+  selector: 
+    workloadSelector: {} 
+  appInfo:
+    intent: mvp-demo
+  data:
+    - dataSetID: "mvp/diabetes-json"
+      requirements:
+        copy:
+          required: true
+        interface: 
+          protocol: s3
+          dataformat: parquet

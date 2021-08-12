@@ -1,0 +1,20 @@
+apiVersion: app.m4d.ibm.com/v1alpha1
+kind: M4DApplication
+metadata:
+  name: heir-notebook
+  labels:
+    app: heir-notebook
+spec:
+  selector:
+    workloadSelector:
+      matchLabels:
+        app: heir-notebook
+  appInfo:
+    intent: mvp-demo
+  data:
+    - dataSetID: “heir-mvp/diabetes-json”
+      requirements:
+        interface: 
+          protocol: m4d-arrow-flight
+          dataformat: arrow
+
