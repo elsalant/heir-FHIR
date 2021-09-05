@@ -1,41 +1,12 @@
-Preliminary - Setting up minio
-1. Mac - first time install with Homebrew:
-brew install minio/stable/minio
-2. Start minio
-minio server --address <port> <data location>
-eg: minio server --address ":9000" /Users/eliot/projects/HEIR/code/data
-On browser: http://127.0.0.1:9000 with minioadmin/minioadmin
-
-3. Check an encryption key for the data:
-Encryption key should be 32 bytes (chars) plain text key 
-e.g.:
->32byteslongsecretkeymustbegive
-4. Copy the data to the bucket:
-Set up an alias to the bucket: -eg for an alias, "HEIR_STORE"
-mc alias set HEIR_STORE http://localhost:9000 minioadmin minioadmin
-
-mc cp <data source> ALIAS/<full path to bucket>/ --encrypt-key "ALIAS/<bucket name>/=<base64 key>"  [ADD THE "="]
-e.g.:
-mc cp --encrypt-key 'HEIR_STORE/Users/eliot/projects/HEIR/code/data/minio-bucket/=32byteslongsecretkeymustbegiven2' /Users/eliot/projects/synthea/output/fhir/A*.json HEIR_STORE/minio-bucket
-
 >> To start the IBM FHIR Server docker image:
-docker pull ibmcom/ibm-fhir-server
-> Copy files in container from /home/default/transfers to config
-
-docker run -p 9443:9443 -e BOOTSTRAP_DB=true -v /Users/eliot/projects/HEIR/code/transfers:/home/default/transfers ibmcom/ibm-fhir-server_els
-
->> IBM FHIR server in k8s:
-helm install ibmfhir /Users/eliot/projects/HEIR/code/k8s/ibmfhir_server-0.1.0.tgz
-kubectl port-forward svc/ibmfhir 9443:9443
+helm install ibmfhir /Users/eliot/projects/HEIR/code/helm/ibmfhir_server-0.1.0.tgz -n fybrik-system
+kubectl port-forward svc/ibmfhir 9443:9443 -n fybrik-system
 
 >> To start Kafka k8s:
-  helm install kafka bitnami/kafka
+  helm install kafka bitnami/kafka -n fybrik-system
 
 >> To create a Kafka client pod:
 kubectl run kafka-client --restart='Never' --image docker.io/bitnami/kafka:2.8.0-debian-10-r43 --namespace heir-mvp --command -- sleep infinity
-
-[NOT USED] >> To start docker Kafka:
-zookeeper-server-start -daemon /usr/local/etc/kafka/zookeeper.properties & kafka-server-start /usr/local/etc/kafka/server.properties
 
 1. In the synthea files, change bundle type from "transaction" to "batch"
 "type": "transaction", -> "type": "batch"
@@ -58,3 +29,37 @@ curl -k --location --request GET 'https://127.0.01:9443/fhir-server/api/v4/Patie
 
 >> To check the Kafka topic queue:
 kubectl  exec -it kafka-client -- kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic fhir-wp2 
+
+To build Docker image:
+cd /Users/eliot/projects/HEIR/code/python
+make docker-build
+
+Push the image to Docker package repo
+make docker-push
+
+Push the Helm chart to the repo
+make helm-login
+  helm registry login -u elsalant -p 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 ghcr.io
+make helm-verify
+
+go to the directory with the Helm chart and do:
+helm chart save <Helm chart directory> ghcr.io/elsalant/<chart image name>:tag   where the tag and image name need to be what is defined in Chart.yaml
+helm chart save fhir-to-s3 ghcr.io/elsalant/fhir-to-s3-chart:0.0.1
+
+Push the chart to the repo:
+helm push ghcr.io/elsalant/<chart image name>:tag
+   helm chart push ghcr.io/elsalant/fhir-to-s3-chart:0.0.1
+
+from /Users/eliot/projects/HEIR/code/mvp:
+Install the account, credentials and asset:
+kubectl apply -f credentials-els.yaml
+kubectl apply -f asset-els.yaml
+kubectl apply -f account-els.yaml
+
+Install the module
+kubectl apply -f fhirToS3module-els.yaml -n fybrik-system
+
+Install the application (in mvp namespace)
+kubectl apply -f mvpApplication-els.yaml -n mvp
+ 
+

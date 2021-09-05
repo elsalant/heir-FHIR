@@ -7,14 +7,13 @@ import tempfile
 
 import uuid
 import os
+
+import yaml
 from kafka import KafkaConsumer
 from json import loads
 
-import pandas as pd
-import fsspec
-
-DEFAULT_KAFKA_TOPIC = 'heir-wp2'
-DEFAULT_KAKFA_HOST = 'localhost:9092'
+DEFAULT_KAFKA_TOPIC = 'fhir-wp2'
+DEFAULT_KAKFA_HOST = 'kafka.fybrik-system:9092'
 
 connectionDict = json.loads('{ \
   "apikey": "-8qkZdzf4o8GhEBjG3n8jwJyNYLprPRTZezqvM69NFub", \
@@ -33,15 +32,17 @@ DEFAULT_S3_URL = 'http://s3.ap.cloud-object-storage.appdomain.cloud'
 DEFAULT_ACCESS_KEY = connectionDict['cos_hmac_keys']['access_key_id']
 DEFAULT_SECRET_KEY = connectionDict['cos_hmac_keys']['secret_access_key']
 
-kafka_topic = os.getenv("WP2_TOPIC") if os.getenv("WP2_TOPIC") else DEFAULT_KAFKA_TOPIC
-kafka_host = os.getenv("HEIR_KAFKA_HOST") if os.getenv("HEIR_KAFKA_HOST") else DEFAULT_KAKFA_HOST
+#kafka_topic = os.getenv("WP2_TOPIC") if os.getenv("WP2_TOPIC") else DEFAULT_KAFKA_TOPIC
+#kafka_host = os.getenv("HEIR_KAFKA_HOST") if os.getenv("HEIR_KAFKA_HOST") else DEFAULT_KAKFA_HOST
 
 s3_URL = os.getenv("S3_URL") if os.getenv("S3_URL") else DEFAULT_S3_URL
-s3_access_key = os.getenv("S3_ACCESS_KEY") if os.getenv("S3_ACCESS_KEY") else DEFAULT_ACCESS_KEY
-s3_secret_key = os.getenv("S3_SECRET_KEY") if os.getenv("S3_SECRET_KEY ") else DEFAULT_SECRET_KEY
+s3_access_key = os.getenv("access_key_id") if os.getenv("access_key_id") else DEFAULT_ACCESS_KEY
+s3_secret_key = os.getenv("secret_access_key") if os.getenv("secret_access_key") else DEFAULT_SECRET_KEY
 
+if os.getenv("access_key_id"):
+    print("access_key_id env found!")
 BUCKET_PREFIX = '-heir-'
-TEST = True
+TEST = False
 
 TEST_BUNDLE_DATA = '{ \
   "resourceType": "Bundle", \
@@ -114,22 +115,27 @@ def get_resource_buckets(searchPrefix):
     matchingBuckets = [s for s in bucketList if searchPrefix in s]
     return matchingBuckets
 
-def read_from_kafka():
+def connect_to_kafka():
+    consumer = None
+    try:
+        consumer = KafkaConsumer(
+            kafka_topic,
+            bootstrap_servers=[kafka_host],
+            group_id=kafka_topic,
+            value_deserializer=lambda x: loads(x.decode('utf-8')))
+    except:
+        raise Exception("Kafka did not connect for host " + kafka_host + " and  topic " + kafka_topic)
+
+    print("Connection to kafka at host " + kafka_host + " and  topic " + kafka_topic + " succeeded!")
+    return consumer
+
+def read_from_kafka(consumer):
     resourceList = []
     if TEST:
         resourceList.append(TEST_BUNDLE_DATA)
-    else:
-        try:
-            consumer = KafkaConsumer(
-                kafka_topic,
-                bootstrap_servers=[kafka_host],
-                group_id=kafka_topic,
-                value_deserializer=lambda x: loads(x.decode('utf-8')))
-        except:
-            resourceList = ["Error: kafka didn't connect"]
-        for message in consumer:
-            print("Read from Kafka: ", message.value)
-            resourceList.append(message.value)
+    for message in consumer:
+        print("Read from Kafka: ", message.value)
+        resourceList.append(message.value)
     return(resourceList)
 
 def create_bucket(bucket_prefix, s3_connection):
@@ -169,40 +175,99 @@ def write_to_bucket(bucketName, tempFile, fnameSeed):
     finally:
         tempFile.close()
 
-connection = boto3.resource(
-    's3',
-    aws_access_key_id = s3_access_key,
-    aws_secret_access_key = s3_secret_key,
-    endpoint_url = s3_URL
-)
+def main():
+    global connection
+    global kafka_topic
+    global kafka_host
 
-fhirList = read_from_kafka()
-if json.loads(fhirList[0])['resourceType'] == 'Bundle':
-    fhirList = json.loads(fhirList[0])['entry']   # list of dictionary but we need to extract 'resource' value from each entry
-'''    newList = []
-    for record in dictList:
-        newList.append(record['resource'])
-    fhirList = newList
-    '''
-for resource in fhirList:
-    if type(resource) is dict:   # case of a bundle - still need to extract resource entry
-        resourceDict = resource['resource']
-        resource = str(resourceDict)
-    else:
-        resourceDict = json.loads(resource)
-    resourceType = resourceDict['resourceType']
-    print('resourceType = ', resourceType)
-# Store resources in a bundle prefixed by the resource type
-    bucketNamePrefix = (resourceType+BUCKET_PREFIX).lower()
+    print("starting module!!")
 
-    matchingBucket = get_resource_buckets(bucketNamePrefix)
-    if len(matchingBucket) > 1:
-        raise AssertionError('Too many matching buckets found! '+ len(matchingBucket) + ' ' + str(matchingBucket))
-    elif len(matchingBucket) == 1:
-        bucketName = matchingBucket[0]
-    else:
-        bucketName, response = create_bucket(bucketNamePrefix, connection)
-    tempFile = contentToFile(resource, resourceType)
-    fName = ''.join([str(uuid.uuid4().hex[:6]), resourceType])
-    write_to_bucket(bucketName, tempFile, fName)
-    print("information written to bucket ", bucketName, ' as ', fName)
+    s3_URL = DEFAULT_S3_URL
+    s3_access_key = DEFAULT_ACCESS_KEY
+    s3_secret_key = DEFAULT_SECRET_KEY
+
+    CM_PATH = '/etc/conf/conf.yaml'
+    cmDict = []
+
+    try:
+        with open(CM_PATH, 'r') as stream:
+            cmReturn = yaml.safe_load(stream)
+        print('cmReturn = ', cmReturn)
+        cmDict = cmReturn.get('data', [])
+        print("cmDict['WP2_TOPIC'] = ", cmDict['WP2_TOPIC'])
+
+        kafka_host = os.getenv("HEIR_KAFKA_HOST") if os.getenv("HEIR_KAFKA_HOST") else DEFAULT_KAKFA_HOST
+    except:
+        print("no file found " + CM_PATH)
+
+    try:
+        kafka_topic = cmDict['WP2_TOPIC']
+        print('kafka_topic passed as ' + kafka_topic)
+    except:
+        kafka_topic = DEFAULT_KAFKA_TOPIC
+        print('using DEFAULT_KAFKA_TOPIC = ' + DEFAULT_KAFKA_TOPIC)
+    try:
+        kafka_host = cmDict['HEIR_KAFKA_HOST']
+        print('kafka_host passed as ' + kafka_host)
+    except:
+        kafka_host = DEFAULT_KAKFA_HOST
+        print('using DEFAULT_KAFKA_HOST = ' + DEFAULT_KAKFA_HOST)
+
+    s3_URL = os.getenv("S3_URL") if os.getenv("S3_URL") else DEFAULT_S3_URL
+    s3_access_key = os.getenv("access_key_id") if os.getenv("access_key_id") else DEFAULT_ACCESS_KEY
+    s3_secret_key = os.getenv("secret_access_key") if os.getenv("secret_access_key") else DEFAULT_SECRET_KEY
+
+    connection = boto3.resource(
+        's3',
+        aws_access_key_id = s3_access_key,
+        aws_secret_access_key = s3_secret_key,
+        endpoint_url = s3_URL
+    )
+
+    consumer = connect_to_kafka()
+    print(" Waiting to read from kafka topic " + kafka_topic + " at host: " + kafka_host)
+    fhirList = []
+    if TEST:
+        fhirList.append(TEST_BUNDLE_DATA)
+    for message in consumer:
+        print("Read from Kafka: ", message.value)
+        resourceDict = message.value
+        print("type(resourceDict) = " + str(type(resourceDict)))
+        print("resourceDict = " + str(resourceDict))
+        try:
+            if json.loads(resourceDict[0])['resourceType'] == 'Bundle':
+                fhirList = json.loads(resourceDict[0])['entry']   # list of dictionary but we need to extract 'resource' value from each entry
+            print("Bundle detected!")
+        except:
+            # If we don't have a bundle, then we are really good to go for resourceDict.  However, to be consistent with the
+            # bundle path, push resourceDict into a fhirList as a string
+            fhirList.append(str(resourceDict))
+        print("read from Kafa done, type(fhirList) = " + str(type(fhirList)))
+        print("fhirList = " + str(fhirList))
+        for resource in fhirList:
+            if type(resource) is dict:   # case of a bundle - still need to extract resource entry
+                resourceDict = resource['resource']
+                resourceType = resourceDict['resourceType']
+                resource = str(resourceDict)
+            else:
+                resourceType = resourceDict['resourceType']
+
+            print('resourceType = ', resourceType)
+        # Store resources in a bundle prefixed by the resource type
+            bucketNamePrefix = (resourceType+BUCKET_PREFIX).lower()
+
+            matchingBucket = get_resource_buckets(bucketNamePrefix)
+            if len(matchingBucket) > 1:
+                raise AssertionError('Too many matching buckets found! '+ len(matchingBucket) + ' ' + str(matchingBucket))
+            elif len(matchingBucket) == 1:
+                bucketName = matchingBucket[0]
+            else:
+                bucketName, response = create_bucket(bucketNamePrefix, connection)
+            tempFile = contentToFile(resource, resourceType)
+            fName = ''.join([str(uuid.uuid4().hex[:6]), resourceType])
+            write_to_bucket(bucketName, tempFile, fName)
+            print("information written to bucket ", bucketName, ' as ', fName)
+    consumer.close()
+
+if __name__ == "__main__":
+    main()

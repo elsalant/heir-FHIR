@@ -1,0 +1,36 @@
+# Copyright 2020 IBM Corp.
+# SPDX-License-Identifier: Apache-2.0
+
+---
+apiVersion: app.fybrik.io/v1alpha1
+kind: FybrikModule
+metadata:
+  name: fhir-to-s3
+  labels:
+    name: fhirToS3
+    version: 0.1.0 
+spec:
+  flows:
+  - copy  
+  capabilities:
+    supportedInterfaces:
+    - flow: copy
+      source: 
+        protocol: kafka    
+        dataformat: json
+      sink: 
+        protocol: s3
+        dataformat: csv
+    actions:
+    - id: redact-ID
+      level: 2  # column
+    - id: removed-ID
+      level: 2  # column
+  chart:
+    name: ghcr.io/elsalant/fhir-to-s3-chart:0.0.1
+  statusIndicators:
+    - kind: StreamTransfer
+      successCondition: status.status == SUCCEEDED
+      failureCondition: status.status == FAILED
+      errorMessage: status.error
+
