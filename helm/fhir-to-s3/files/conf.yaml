@@ -1,0 +1,10 @@
+data:
+{{- if .Values.copy -}}
+    {{- if .Values.copy.source.connection.kafka }}
+      WP2_TOPIC: {{ .Values.copy.source.connection.kafka.topic_name }}
+      HEIR_KAFKA_HOST: {{ .Values.copy.source.connection.kafka.bootstrap_servers }}  
+    {{- end }}
+    {{- if .Values.copy.destination.connection.s3 }}
+      S3_URL: {{if not (contains "://" .Values.copy.destination.connection.s3.endpoint)}} https://{{end}}{{ .Values.copy.destination.connection.s3.endpoint }}
+    {{- end }}
+{{- end -}}
