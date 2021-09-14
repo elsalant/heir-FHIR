@@ -22,7 +22,9 @@ for file in output/fhir/diabetes/*; do curl -k --location --request POST 'https:
 To load a single record:
 curl -k --location --request POST 'https://localhost:9443/fhir-server/api/v4' --header 'Content-Type: application/fhir+json' \
 --user "fhiruser:change-password" --data-binary  "@/Users/eliot/projects/HEIR/code/data/diabetes/Abel832_Nitzsche158_d9b860b8-0b89-20a6-a7e1-74545fa8b3a3.json"
-
+To load just patient data:
+curl -k --location --request POST 'https://localhost:9443/fhir-server/api/v4' --header 'Content-Type: application/fhi$
+--user "fhiruser:change-password" --data-binary  "@/Users/eliot/projects/HEIR/code/data/diabetes/samplePatient.json
 
 5. How to get a complete EHR for a specific patient:
 curl -k --location --request GET 'https://127.0.01:9443/fhir-server/api/v4/Patient/17a96124508-f79963bb-ff31-4284-9c72-ca47e6c91fec/$everything' --user 'fhiruser:change-password' | jq
