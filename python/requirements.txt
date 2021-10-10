@@ -9,6 +9,7 @@ cryptography==3.4.6
 idna==3.2
 jmespath==0.10.0
 kafka-python==2.0.2
+kubernetes==18.20.0
 multidict==5.1.0
 pycparser==2.20
 PyYAML==5.4.1

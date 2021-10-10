@@ -11,36 +11,12 @@ import os
 import yaml
 from kafka import KafkaConsumer
 from json import loads
+from kubernetes import client, config
+import base64
 
 DEFAULT_KAFKA_TOPIC = 'fhir-wp2'
 DEFAULT_KAKFA_HOST = 'kafka.fybrik-system:9092'
 
-connectionDict = json.loads('{ \
-  "apikey": "-8qkZdzf4o8GhEBjG3n8jwJyNYLprPRTZezqvM69NFub", \
-  "cos_hmac_keys": { \
-    "access_key_id": "65608160e74c42409da64c808575f994", \
-    "secret_access_key": "4e95c96e7fe67001c07617c55051140ba0ad4f958c37b335" }, \
-  "endpoints": "https://control.cloud-object-storage.cloud.ibm.com/v2/endpoints", \
-  "iam_apikey_description": "Auto-generated for key 65608160-e74c-4240-9da6-4c808575f994", \
-  "iam_apikey_name": "heir-mvp", \
-  "iam_role_crn": "crn:v1:bluemix:public:iam::::serviceRole:Writer", \
-  "iam_serviceid_crn": "crn:v1:bluemix:public:iam-identity::a/285dff93a1c4f6708ad25651e4d16ad0::serviceid:ServiceId-74022536-f7e6-46ba-9dda-8d5eb96f7d4c", \
-  "resource_instance_id": "crn:v1:bluemix:public:cloud-object-storage:global:a/285dff93a1c4f6708ad25651e4d16ad0:8d7ba9f9-307e-47fd-bb75-2f558f3f4198::" \
-}')
-
-DEFAULT_S3_URL = 'http://s3.ap.cloud-object-storage.appdomain.cloud'
-DEFAULT_ACCESS_KEY = connectionDict['cos_hmac_keys']['access_key_id']
-DEFAULT_SECRET_KEY = connectionDict['cos_hmac_keys']['secret_access_key']
-
-#kafka_topic = os.getenv("WP2_TOPIC") if os.getenv("WP2_TOPIC") else DEFAULT_KAFKA_TOPIC
-#kafka_host = os.getenv("HEIR_KAFKA_HOST") if os.getenv("HEIR_KAFKA_HOST") else DEFAULT_KAKFA_HOST
-
-s3_URL = os.getenv("S3_URL") if os.getenv("S3_URL") else DEFAULT_S3_URL
-s3_access_key = os.getenv("access_key_id") if os.getenv("access_key_id") else DEFAULT_ACCESS_KEY
-s3_secret_key = os.getenv("secret_access_key") if os.getenv("secret_access_key") else DEFAULT_SECRET_KEY
-
-if os.getenv("access_key_id"):
-    print("access_key_id env found!")
 BUCKET_PREFIX = '-heir-'
 TEST = False
 
@@ -108,11 +84,11 @@ def get_resource_buckets(searchPrefix):
     # Get a bucket with a name that contains the passed prefix
     bucketCollection = connection.buckets.all()
     bucketList = []
-    print('Printing bucket names...')
     for bucket in bucketCollection:
-        print(f'Bucket Name: {bucket.name}')
-        bucketList.append(bucket.name)
+        bucketList.append(str(bucket.name))
     matchingBuckets = [s for s in bucketList if searchPrefix in s]
+    if (matchingBuckets):
+        print("matchingBuckets = " + str(matchingBuckets))
     return matchingBuckets
 
 def connect_to_kafka():
@@ -122,6 +98,8 @@ def connect_to_kafka():
             kafka_topic,
             bootstrap_servers=[kafka_host],
             group_id=kafka_topic,
+            auto_offset_reset='latest',
+            enable_auto_commit=True,
             value_deserializer=lambda x: loads(x.decode('utf-8')))
     except:
         raise Exception("Kafka did not connect for host " + kafka_host + " and  topic " + kafka_topic)
@@ -171,9 +149,21 @@ def contentToFile(content, fnameSeed):
 def write_to_bucket(bucketName, tempFile, fnameSeed):
     try:
         bucketObject = connection.Object(bucket_name=bucketName, key=fnameSeed)
+        print("about to write to S3: bucketName = " + bucketName + " fnameSeed = " + fnameSeed)
         bucketObject.upload_file(tempFile.name)
     finally:
         tempFile.close()
+
+def getSecretKeys(secret_name, secret_namespace):
+    try:
+        config.load_incluster_config()  # in cluster
+    except:
+        config.load_kube_config()   # useful for testing outside of k8s
+    v1 = client.CoreV1Api()
+    secret = v1.read_namespaced_secret(secret_name, secret_namespace)
+    accessKeyID = base64.b64decode(secret.data['access_key_id'])
+    secretAccessKey = base64.b64decode(secret.data['secret_access_key'])
+    return(accessKeyID.decode('ascii'), secretAccessKey.decode('ascii'))
 
 def main():
     global connection
@@ -181,10 +171,6 @@ def main():
     global kafka_host
 
     print("starting module!!")
-
-    s3_URL = DEFAULT_S3_URL
-    s3_access_key = DEFAULT_ACCESS_KEY
-    s3_secret_key = DEFAULT_SECRET_KEY
 
     CM_PATH = '/etc/conf/conf.yaml'
     cmDict = []
@@ -194,7 +180,6 @@ def main():
             cmReturn = yaml.safe_load(stream)
         print('cmReturn = ', cmReturn)
         cmDict = cmReturn.get('data', [])
-        print("cmDict['WP2_TOPIC'] = ", cmDict['WP2_TOPIC'])
 
         kafka_host = os.getenv("HEIR_KAFKA_HOST") if os.getenv("HEIR_KAFKA_HOST") else DEFAULT_KAKFA_HOST
     except:
@@ -213,9 +198,20 @@ def main():
         kafka_host = DEFAULT_KAKFA_HOST
         print('using DEFAULT_KAFKA_HOST = ' + DEFAULT_KAKFA_HOST)
 
-    s3_URL = os.getenv("S3_URL") if os.getenv("S3_URL") else DEFAULT_S3_URL
-    s3_access_key = os.getenv("access_key_id") if os.getenv("access_key_id") else DEFAULT_ACCESS_KEY
-    s3_secret_key = os.getenv("secret_access_key") if os.getenv("secret_access_key") else DEFAULT_SECRET_KEY
+    s3_URL = cmDict['S3_URL']
+
+
+    secret_namespace = cmDict['SECRET_NSPACE']
+    secret_fname = cmDict['SECRET_FNAME']
+
+    print("secret_namespace = " + secret_namespace + ", secret_fname = " + secret_fname)
+    s3_access_key, s3_secret_key = getSecretKeys(secret_fname, secret_namespace)
+    print("access key found: " + s3_access_key + "secret_key found: " + s3_secret_key)
+
+    print("s3_URL = ", str(s3_URL))
+
+    assert s3_access_key != '', 'No s3_access key found!'
+    assert s3_secret_key != '', 'No s3_secret_key found!'
 
     connection = boto3.resource(
         's3',
@@ -230,7 +226,8 @@ def main():
     if TEST:
         fhirList.append(TEST_BUNDLE_DATA)
     for message in consumer:
-        print("Read from Kafka: ", message.value)
+#       print("Read from Kafka: ", message.value)
+        print("Read from Kafka!")
         resourceDict = message.value
         print("type(resourceDict) = " + str(type(resourceDict)))
         print("resourceDict = " + str(resourceDict))
@@ -264,7 +261,9 @@ def main():
             else:
                 bucketName, response = create_bucket(bucketNamePrefix, connection)
             tempFile = contentToFile(resource, resourceType)
+            # Generate a random prefix to the resource type
             fName = ''.join([str(uuid.uuid4().hex[:6]), resourceType])
+            print("fName = " + fName + "resourceType = " + resourceType)
             write_to_bucket(bucketName, tempFile, fName)
             print("information written to bucket ", bucketName, ' as ', fName)
     consumer.close()

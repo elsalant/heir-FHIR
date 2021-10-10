@@ -1,3 +1,5 @@
+Build the IBM FHIR Server docker image:
+
 >> To start the IBM FHIR Server docker image:
 helm install ibmfhir /Users/eliot/projects/HEIR/code/helm/ibmfhir_server-0.1.0.tgz -n fybrik-system
 kubectl port-forward svc/ibmfhir 9443:9443 -n fybrik-system
@@ -23,7 +25,7 @@ To load a single record:
 curl -k --location --request POST 'https://localhost:9443/fhir-server/api/v4' --header 'Content-Type: application/fhir+json' \
 --user "fhiruser:change-password" --data-binary  "@/Users/eliot/projects/HEIR/code/data/diabetes/Abel832_Nitzsche158_d9b860b8-0b89-20a6-a7e1-74545fa8b3a3.json"
 To load just patient data:
-curl -k --location --request POST 'https://localhost:9443/fhir-server/api/v4' --header 'Content-Type: application/fhi$
+curl -k --location --request POST 'https://localhost:9443/fhir-server/api/v4' --header 'Content-Type: application/fhir+json' \
 --user "fhiruser:change-password" --data-binary  "@/Users/eliot/projects/HEIR/code/data/diabetes/samplePatient.json
 
 5. How to get a complete EHR for a specific patient:
@@ -31,6 +33,9 @@ curl -k --location --request GET 'https://127.0.01:9443/fhir-server/api/v4/Patie
 
 >> To check the Kafka topic queue:
 kubectl  exec -it kafka-client -- kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic fhir-wp2 
+
+Create a namespace for the mvp:
+kubectl create namespace mvp
 
 To build Docker image:
 cd /Users/eliot/projects/HEIR/code/python
@@ -57,6 +62,9 @@ Install the account, credentials and asset:
 kubectl apply -f credentials-els.yaml
 kubectl apply -f asset-els.yaml
 kubectl apply -f account-els.yaml
+
+kubectl edit cm cluster-metadata -n fybrik-system
+and change theshire to UK
 
 Install the module
 kubectl apply -f fhirToS3module-els.yaml -n fybrik-system

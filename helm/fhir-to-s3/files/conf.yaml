@@ -6,5 +6,9 @@ data:
     {{- end }}
     {{- if .Values.copy.destination.connection.s3 }}
       S3_URL: {{if not (contains "://" .Values.copy.destination.connection.s3.endpoint)}} https://{{end}}{{ .Values.copy.destination.connection.s3.endpoint }}
+      credentials:
+        secretPath: {{ .Values.copy.source.vault.secretPath }}
+      SECRET_NSPACE: {{ .Values.copy.destination.credentialLocation.namespace }}
+      SECRET_FNAME: {{ .Values.copy.destination.credentialLocation.secret_file }}       
     {{- end }}
 {{- end -}}

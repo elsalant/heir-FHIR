@@ -52,7 +52,14 @@ copy:
         object_key: 
       type: 2
     credentialLocation: 
+      namespace: fybrik-system
+      secret_file: credentials-els
     format: csv
+    vault:
+      address:
+      authPath: 
+      role: 
+      secretPath: 
 
   transformations:
     - args:
