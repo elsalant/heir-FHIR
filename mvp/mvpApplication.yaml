@@ -1,7 +1,7 @@
 apiVersion: app.fybrik.io/v1alpha1
 kind: FybrikApplication
 metadata:
-  name: mvp-notebook
+  name: healthdemo
   namespace: mvp
   labels:
     app: mvp-notebook

@@ -10,22 +10,19 @@ metadata:
     name: fhirToS3
     version: 0.1.0 
 spec:
-  flows:
-  - copy  
+  type:  service  
   capabilities:
-    supportedInterfaces:
-    - flow: copy
-      source: 
-        protocol: kafka    
-        dataformat: json
-      sink: 
-        protocol: s3
-        dataformat: csv
-    actions:
-    - id: redact-ID
-      level: 2  # column
-    - id: removed-ID
-      level: 2  # column
+    - supportedInterfaces:
+        - source: 
+            protocol: kafka    
+            dataformat: json
+          sink: 
+            protocol: s3
+            dataformat: csv
+      actions:
+      - name: RedactAction
+      - name: RemoveAction
+      capability: copy
   chart:
     name: ghcr.io/elsalant/fhir-to-s3-chart:0.0.1
   statusIndicators:
