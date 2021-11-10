@@ -7,7 +7,7 @@ replicaCount: 1
 image:
 #  repository: 192.168.56.4:31965
 #  name: ibmcom/ibm-fhir-server_els:latest
-  name: ghcr.io/ibm-fhir-server_els:latest
+  name: ghcr.io/elsalant/ibm-fhir-server_els:latest
   pullPolicy: IfNotPresent 
   # Overrides the image tag whose default is the chart version.
   #tag: ""

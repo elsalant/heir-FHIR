@@ -77,8 +77,22 @@ To load a single record:
 curl -k --location --request POST 'https://localhost:9443/fhir-server/api/v4' --header 'Content-Type: application/fhir+json' \
 --user "fhiruser:change-password" --data-binary  "@/Users/eliot/projects/HEIR/code/data/diabetes/Abel832_Nitzsche158_d9b860b8-0b89-20a6-a7e1-74545fa8$
 To load just patient data:
-curl -k --location --request POST 'https://localhost:9443/fhir-server/api/v4' --header 'Content-Type: application/fhir+json' \
---user "fhiruser:change-password" --data-binary  "@/Users/eliot/projects/HEIR/code/data/diabetes/samplePatient.json
+curl -k --location --request POST 'https://localhost:9443/fhir-server/api/v4/Patient' --header 'Content-Type: application/fhir+json' \
+--user "fhiruser:change-password" --data-binary  "@/Users/eliot/projects/HEIR/code/data/diabetes/samplePatient.json"
+
+To read the stored Patient information:
+curl -k -i -u 'fhiruser:change-password' --request GET https://localhost:9443/fhir-server/api/v4/Patient
+curl -k -i -u 'fhiruser:change-password' --request GET https://localhost:9443/fhir-server/api/v4/Patient/17d0430cff4-ba9750b8-7f71-4858-bd7d-6ee84a34cb2d
+
+To load a single Observation:
+curl -k --location --request POST 'https://localhost:9443/fhir-server/api/v4/Observation' --header 'Content-Type: application/fhir+json' \
+--user "fhiruser:change-password" --data-binary  "@/Users/eliot/projects/HEIR/code/data/diabetes/sampleObservation.json"
+
+curl -k -i -u 'fhiruser:change-password' --request GET "https://localhost:9443/fhir-server/api/v4/Observation?code=4548-4"
+[QUOTATION MARKS REQUIRED!!]
+curl -k -i -u 'fhiruser:change-password' --request GET "https://localhost:9443/fhir-server/api/v4/Observation?subject=Patient/f001"
+To ADD values:
+curl -k -i -u 'fhiruser:change-password' --request GET "https://localhost:9443/fhir-server/api/v4/Observation?code=http://loinc.org|4548-4"
 
 5. How to get a complete EHR for a specific patient:
 curl -k --location --request GET 'https://127.0.01:9443/fhir-server/api/v4/Patient/17a96124508-f79963bb-ff31-4284-9c72-ca47e6c91fec/$everything' --us$
