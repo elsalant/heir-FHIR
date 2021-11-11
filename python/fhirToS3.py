@@ -14,8 +14,10 @@ from kafka import KafkaConsumer
 from json import loads
 from kubernetes import client, config
 import base64
+import ast
 
 from curlCommands import handleQuery
+from datetime import date, datetime, time, timedelta, timezone
 
 TEST = True
 
@@ -27,6 +29,10 @@ else:
     DEFAULT_FHIR_HOST = 'ibmfhir.fybrik-system:9443'
 DEFAULT_FHIR_USER = 'fhiruser'
 DEFAULT_FHIR_PW = 'change-password'
+
+DEFAULT_TIMEWINDOW = 3560 #days - should be 14
+HIGH_THRESHOLD = 8.3
+LOW_THRESHOLD = 4
 
 PATIENT_LOOKUP = '/fhir-server/api/v4/Observation'
 BUCKET_PREFIX = '-heir-'
@@ -106,8 +112,8 @@ TEST_OBSERVATION = '{ \
     "coding": [  \
       {  \
         "system": "http://loinc.org",  \
-        "code": "15074-8",  \
-        "display": "Glucose [Moles/volume] in Blood"  \
+        "code": "ç",  \
+        "display": "Glucose [Moles/volume] in Body Fluid"  \
       }  \
     ]  \
   },  \
@@ -116,9 +122,9 @@ TEST_OBSERVATION = '{ \
     "display": "P. van de Heuvel"  \
   },  \
   "effectivePeriod": {  \
-    "start": "2013-04-02T09:30:10+01:00"  \
+    "start": "2021-11-11T09:30:10+01:00"  \
   },  \
-  "issued": "2013-04-03T15:30:10+01:00",  \
+  "issued": "2021-11-11T15:30:10+01:00",  \
   "performer": [  \
     {  \
       "reference": "Practitioner/f005",  \
@@ -133,6 +139,11 @@ TEST_OBSERVATION = '{ \
   }  \
 }'
 
+kafka_host = os.getenv("HEIR_KAFKA_HOST") if os.getenv("HEIR_KAFKA_HOST") else DEFAULT_KAKFA_HOST
+fhir_host = os.getenv("HEIR_FHIR_HOST") if os.getenv("HEIR_FHIR_HOST") else DEFAULT_FHIR_HOST
+fhir_user = os.getenv("HEIR_FHIR_USER") if os.getenv("HEIR_FHIR_USER") else DEFAULT_FHIR_USER
+fhir_pw = os.getenv("HEIR_FHIR_PW") if os.getenv("HEIR_FHIR_PW") else DEFAULT_FHIR_PW
+time_window = os.getenv("HEIR_TIMEWINDOW") if os.getenv("HEIR_TIMEWINDOW") else DEFAULT_TIMEWINDOW
 
 def get_resource_buckets(searchPrefix):
     # Get a bucket with a name that contains the passed prefix
@@ -212,6 +223,133 @@ def getSecretKeys(secret_name, secret_namespace):
     secretAccessKey = base64.b64decode(secret.data['secret_access_key'])
     return(accessKeyID.decode('ascii'), secretAccessKey.decode('ascii'))
 
+
+def read_from_fhir(id):
+    print("querying FHIR server for patient_id " + id)
+    queryURL = fhir_host
+    queryString = PATIENT_LOOKUP
+    params = {'subject': id}
+    auth = (fhir_user, fhir_pw)
+
+    observationRecord = handleQuery(queryURL, queryString, auth, params, 'GET')
+    # Strip the bundle information out and convert to data frame
+    recordList = []
+    for record in observationRecord['entry']:
+        recordList.append(json.dumps(record['resource']))
+    jsonList = [ast.literal_eval(x) for x in recordList]
+ #   observationDF = pd.DataFrame.from_records(jsonList)
+    observationDF = pd.json_normalize(jsonList)
+    return observationDF
+
+
+def get_policy():
+    if TEST:
+#        policies = '[{"name": "Redact PII columns", "action": "RedactColumn", "columns": ["id"]}]'
+        policies = '[{"name": "Average glucose measure column", "action": "AverageColumn", "columns": ["valueQuantity.value"]}]'
+    return (json.loads(policies))
+
+
+def apply_policy(df, policies):
+    redactedData = []
+    # Redact df based on policy returned from the policy manager
+    for policy in policies:
+        action = policy['action']
+        if action == 'RedactColumn':
+            for col in policy['columns']:
+                df.drop(col, inplace=True, axis=1)
+            redactedData.append(df.to_json())
+        if action == 'AverageColumn':
+            for col in policy['columns']:
+                mean = df[col].mean()
+                meanStr = '{\"CGM_MEAN\": \"' + str(mean) + '\"}'
+                redactedData.append(meanStr)
+        if action == 'StdDev':
+            for col in policy['columns']:
+                std = df[col].std()
+                stdStr = '{\"CGM_STD\": \"' + str(std) + '\"}'
+                redactedData.append(stdStr)
+        if action == 'RangeTimes':
+    # Calculate Time in Range, Time Above Range, Time Below Range
+            numObservations = len(df)
+            tar = round((len(df.loc[df[col]>HIGH_THRESHOLD,col])/numObservations)*100)
+            tbr = round((len(df.loc[df[col]<HIGH_THRESHOLD,col])/numObservations)*100)
+            tir = 100 - tar - tbr
+
+    print("returning redacted data " + str(redactedData))
+    return redactedData
+
+def timeWindow_filter(df):
+    # drop rows that are outside of the timeframe
+    df.drop(df.loc[(pd.to_datetime(df['effectivePeriod.start'], utc=True) + timedelta(days=time_window) < datetime.now(timezone.utc)) | (df['resourceType'] != 'Observation')].index, inplace=True)
+    return df
+
+
+def write_to_S3(values):
+    # Store resources in a bundle prefixed by the resource type
+    resourceType = 'Observation'
+    bucketNamePrefix = (resourceType + BUCKET_PREFIX).lower()
+
+    matchingBucket = get_resource_buckets(bucketNamePrefix)
+    if len(matchingBucket) > 1:
+        raise AssertionError('Too many matching buckets found! ' + len(matchingBucket) + ' ' + str(matchingBucket))
+    elif len(matchingBucket) == 1:
+        bucketName = matchingBucket[0]
+    else:
+        bucketName, response = create_bucket(bucketNamePrefix, connection)
+        tempFile = contentToFile(values, resourceType)
+        # Generate a random prefix to the resource type
+        fName = ''.join([str(uuid.uuid4().hex[:6]), resourceType])
+        print("fName = " + fName + "resourceType = " + resourceType)
+        write_to_bucket(bucketName, tempFile, fName)
+        print("information written to bucket ", bucketName, ' as ', fName)
+
+def read_from_kafka(consumer):
+    # We want to get the patient id out of the passed Observation in order to use this to look up
+    # records within the time window from FHIR
+    unique_patient_ids = []
+    fhirList = []
+
+    for message in consumer:
+        print("Read from from kafka topic " + kafka_topic + " at host: " + kafka_host)
+        if TEST:
+            resourceDict = json.loads(message)
+        else:
+            resourceDict = message.value
+        print("type(resourceDict) = " + str(type(resourceDict)))
+        print("resourceDict = " + str(resourceDict))
+        try:
+            if json.loads(resourceDict[0])['resourceType'] == 'Bundle':
+                fhirList = json.loads(resourceDict[0])[
+                    'entry']  # list of dictionary but we need to extract 'resource' value from each entry
+            print("Bundle detected!")
+        except:
+            # If we don't have a bundle, then we are really good to go for resourceDict.  However, to be consistent with the
+            # bundle path, push resourceDict into a fhirList as a string
+            fhirList.append(str(resourceDict))
+        print("read from Kafa done, type(fhirList) = " + str(type(fhirList)))
+        print("fhirList = " + str(fhirList))
+        for resource in fhirList:
+            if type(resource) is dict:  # case of a bundle - still need to extract resource entry
+                resourceDict = resource['resource']
+                resourceType = resourceDict['resourceType']
+                resource = str(resourceDict)
+            else:
+                resourceType = resourceDict['resourceType']
+
+            print('resourceType = ', resourceType)
+            # We only care about Observations here
+            if resourceType != 'Observation':
+                continue
+            # Extract the patient id
+            try:
+                patient_id = resourceDict['subject']['reference']
+            except:
+                print("no subject->reference found in record " + str(resource))
+
+            if patient_id not in unique_patient_ids:
+                unique_patient_ids.append(patient_id)
+    return (unique_patient_ids)
+
 def main():
     global connection
     global kafka_topic
@@ -224,11 +362,6 @@ def main():
 
     CM_PATH = '/etc/conf/conf.yaml'
     cmDict = []
-
-    kafka_host = os.getenv("HEIR_KAFKA_HOST") if os.getenv("HEIR_KAFKA_HOST") else DEFAULT_KAKFA_HOST
-    fhir_host = os.getenv("HEIR_FHIR_HOST") if os.getenv("HEIR_FHIR_HOST") else DEFAULT_FHIR_HOST
-    fhir_user = os.getenv("HEIR_FHIR_USER") if os.getenv("HEIR_FHIR_USER") else DEFAULT_FHIR_USER
-    fhir_pw = os.getenv("HEIR_FHIR_PW") if os.getenv("HEIR_FHIR_PW") else DEFAULT_FHIR_PW
 
     try:
         with open(CM_PATH, 'r') as stream:
@@ -280,117 +413,11 @@ def main():
 
     for id in unique_id_list:
         df = read_from_fhir(id)
-        redacted_df = apply_policy(df,policyJson)
+        filteredDF = timeWindow_filter(df)
+        redacted_df = apply_policy(filteredDF,policyJson)
         write_to_S3(redacted_df, "Observation")
     if not TEST:
         consumer.close()
-
-def read_from_fhir(id):
-    print("querying FHIR server for patient_id "+id)
-    queryURL = fhir_host
-    queryString = PATIENT_LOOKUP
-    params = {'subject': id}
-    auth = (fhir_user, fhir_pw)
-
-    observationRecord = handleQuery(queryURL, queryString, auth, params, 'GET')
-    observationDF = pd.DataFrame.from_dict(observationRecord[0])
-    return observationDF
-
-def get_policy():
-    if TEST:
-        policies = '[{"name": "Redact PII columns", "action": "RedactColumn", "columns": ["id"]}]'
-    return(json.loads(policies))
-
-def apply_policy(df, policies):
-    redactedData = []
-    # Redact df based on policy returned from the policy manager
-    for policy in policies:
-        action = policy['action']
-        if action == 'RedactColumn':
-            for col in policy['columns']:
-                df.drop(policy[col], inplace=True, axis=1)
-            redactedData.append(df.to_json())
-        if action == 'AverageColumn':
-            for col in policy['columns']:
-                mean = df[col].mean()
-                meanStr = '{\"'+col+'\": \"'+ mean+'\"}'
-                redactedData.append(meanStr)
-        if action == 'StdDev':
-            for col in policy['columns']:
-                mean = df[col].mean()
-                meanStr = '{\"' + col + '\": \"' + mean + '\"}'
-                redactedData.append(meanStr)
-    return redactedData
-
-    return(df)
-
-def write_to_S3(redacted_df):
-    pass
-
-def write_to_S3(values, resourceType):
-        # Store resources in a bundle prefixed by the resource type
-    bucketNamePrefix = (resourceType+BUCKET_PREFIX).lower()
-
-    matchingBucket = get_resource_buckets(bucketNamePrefix)
-    if len(matchingBucket) > 1:
-        raise AssertionError('Too many matching buckets found! '+ len(matchingBucket) + ' ' + str(matchingBucket))
-    elif len(matchingBucket) == 1:
-        bucketName = matchingBucket[0]
-    else:
-        bucketName, response = create_bucket(bucketNamePrefix, connection)
-        tempFile = contentToFile(values, resourceType)
-        # Generate a random prefix to the resource type
-        fName = ''.join([str(uuid.uuid4().hex[:6]), resourceType])
-        print("fName = " + fName + "resourceType = " + resourceType)
-        write_to_bucket(bucketName, tempFile, fName)
-        print("information written to bucket ", bucketName, ' as ', fName)
-
-def read_from_kafka(consumer):
-    # We want to get the patient id out of the passed Observation in order to use this to look up
-    # records within the time window from FHIR
-    unique_patient_ids = []
-    fhirList = []
-
-    for message in consumer:
-        print("Read from from kafka topic " + kafka_topic + " at host: " + kafka_host)
-        if TEST:
-            resourceDict= json.loads(message)
-        else:
-            resourceDict = message.value
-        print("type(resourceDict) = " + str(type(resourceDict)))
-        print("resourceDict = " + str(resourceDict))
-        try:
-            if json.loads(resourceDict[0])['resourceType'] == 'Bundle':
-                fhirList = json.loads(resourceDict[0])[
-                    'entry']  # list of dictionary but we need to extract 'resource' value from each entry
-            print("Bundle detected!")
-        except:
-            # If we don't have a bundle, then we are really good to go for resourceDict.  However, to be consistent with the
-            # bundle path, push resourceDict into a fhirList as a string
-            fhirList.append(str(resourceDict))
-        print("read from Kafa done, type(fhirList) = " + str(type(fhirList)))
-        print("fhirList = " + str(fhirList))
-        for resource in fhirList:
-            if type(resource) is dict:  # case of a bundle - still need to extract resource entry
-                resourceDict = resource['resource']
-                resourceType = resourceDict['resourceType']
-                resource = str(resourceDict)
-            else:
-                resourceType = resourceDict['resourceType']
-
-            print('resourceType = ', resourceType)
-            # We only care about Observations here
-            if resourceType != 'Observation':
-                continue
-    # Extract the patient id
-            try:
-                patient_id = resourceDict['subject']['reference']
-            except:
-                print("no subject->reference found in record " + str(resource))
-
-            if patient_id not in unique_patient_ids:
-                unique_patient_ids.append(patient_id)
-    return(unique_patient_ids)
 
 if __name__ == "__main__":
     main()
