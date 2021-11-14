@@ -18,6 +18,7 @@ import ast
 
 from curlCommands import handleQuery
 from datetime import date, datetime, time, timedelta, timezone
+from string import Template
 
 TEST = True
 
@@ -245,38 +246,51 @@ def read_from_fhir(id):
 def get_policy():
     if TEST:
 #        policies = '[{"name": "Redact PII columns", "action": "RedactColumn", "columns": ["id"]}]'
-        policies = '[{"name": "Average glucose measure column", "action": "AverageColumn", "columns": ["valueQuantity.value"]}]'
+        policies = '[{"name": "Statics of glucose in body volume", "action": "Statistics", "columns": ["valueQuantity.value"]}]'
+
     return (json.loads(policies))
 
 
 def apply_policy(df, policies):
     redactedData = []
     # Redact df based on policy returned from the policy manager
+    meanStr = ''
+    stdStr = ''  # standard deviation
+    tar = ''   # time above range
+    tbr = ''   # time below range
+    tir = ''   # time in range
+    std = ''
+    cleanPatientId = df['subject.reference'][0].replace('/', '-')
     for policy in policies:
         action = policy['action']
         if action == 'RedactColumn':
             for col in policy['columns']:
                 df.drop(col, inplace=True, axis=1)
             redactedData.append(df.to_json())
-        if action == 'AverageColumn':
-            for col in policy['columns']:
-                mean = df[col].mean()
-                meanStr = '{\"CGM_MEAN\": \"' + str(mean) + '\"}'
-                redactedData.append(meanStr)
-        if action == 'StdDev':
+            output_results(cleanPatientId, d)
+        if action == 'Statistics':
             for col in policy['columns']:
                 std = df[col].std()
                 stdStr = '{\"CGM_STD\": \"' + str(std) + '\"}'
-                redactedData.append(stdStr)
-        if action == 'RangeTimes':
+                mean = df[col].mean()
+                meanStr = '{\"CGM_MEAN\": \"' + str(mean) + '\"}'
+            redactedData.append(meanStr+ ' ' + stdStr)
     # Calculate Time in Range, Time Above Range, Time Below Range
             numObservations = len(df)
             tar = round((len(df.loc[df[col]>HIGH_THRESHOLD,col])/numObservations)*100)
             tbr = round((len(df.loc[df[col]<HIGH_THRESHOLD,col])/numObservations)*100)
             tir = 100 - tar - tbr
-
+        d = {
+            'PATIENT_ID': df['subject.reference'][0],
+            'CGM_TIR': tir,
+            'CGM_TAR': tar,
+            'CGM_TBR': tbr,
+            'CGM_MEAN': mean,
+            'CGM_STD': std
+        }
+        output_results(cleanPatientId,d)
+        redactedData = d
     print("returning redacted data " + str(redactedData))
-    return redactedData
 
 def timeWindow_filter(df):
     # drop rows that are outside of the timeframe
@@ -284,10 +298,9 @@ def timeWindow_filter(df):
     return df
 
 
-def write_to_S3(values):
+def write_to_S3(patientId, values):
     # Store resources in a bundle prefixed by the resource type
-    resourceType = 'Observation'
-    bucketNamePrefix = (resourceType + BUCKET_PREFIX).lower()
+    bucketNamePrefix = (patientId + BUCKET_PREFIX).lower()
 
     matchingBucket = get_resource_buckets(bucketNamePrefix)
     if len(matchingBucket) > 1:
@@ -296,10 +309,10 @@ def write_to_S3(values):
         bucketName = matchingBucket[0]
     else:
         bucketName, response = create_bucket(bucketNamePrefix, connection)
-        tempFile = contentToFile(values, resourceType)
+        tempFile = contentToFile(values, patientId)
         # Generate a random prefix to the resource type
-        fName = ''.join([str(uuid.uuid4().hex[:6]), resourceType])
-        print("fName = " + fName + "resourceType = " + resourceType)
+        fName = ''.join([str(uuid.uuid4().hex[:6]), patientId])
+        print("fName = " + fName + "patientId = " + patientId)
         write_to_bucket(bucketName, tempFile, fName)
         print("information written to bucket ", bucketName, ' as ', fName)
 
@@ -349,6 +362,14 @@ def read_from_kafka(consumer):
             if patient_id not in unique_patient_ids:
                 unique_patient_ids.append(patient_id)
     return (unique_patient_ids)
+
+def output_results(patientId, outvalues):
+    with open('noklus_patient_observation_template.xml', 'r') as f:
+        src = Template(f.read())
+        result = src.substitute(outvalues)
+        print(result)
+        write_to_S3(patientId, result)
+    f.close()
 
 def main():
     global connection
@@ -415,7 +436,6 @@ def main():
         df = read_from_fhir(id)
         filteredDF = timeWindow_filter(df)
         redacted_df = apply_policy(filteredDF,policyJson)
-        write_to_S3(redacted_df, "Observation")
     if not TEST:
         consumer.close()
 
