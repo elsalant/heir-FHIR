@@ -2,9 +2,12 @@ Build the IBM FHIR Server docker image:
 
 >> To start the IBM FHIR Server docker image:
 
-kind load docker-image ibmcom/ibm-fhir-server_els:latest --name <cluster name>
+#kind load docker-image ibmcom/ibm-fhir-server_els:latest --name <cluster name>
+kind load docker-image ghcr.io/elsalant/ibm-fhir-server_els:latest --name heir-mvp
+
 #helm install ibmfhir /Users/eliot/projects/HEIR/code/helm/ibmfhir_server-0.1.0.tgz -n fybrik-system
 helm install ibmfhir /Users/eliot/projects/HEIR/code/helm/ibmfhir_server -n fybrik-system
+
 kubectl port-forward svc/ibmfhir 9443:9443 -n fybrik-system
 
 >> To start Kafka k8s:
@@ -38,10 +41,13 @@ helm push ghcr.io/elsalant/<chart image name>:tag
 
 from /Users/eliot/projects/HEIR/code/mvp:
 Install the account, credentials and asset:
-kubectl apply -f credentials-els.yaml
-kubectl apply -f asset-els.yaml
+kubectl apply -f credentials-eliot-secret.yaml
+kubectl apply -f asset.yaml
 kubectl apply -f account-els.yaml
 kubectl apply -f permissions.yaml
+
+Apply the policies
+/Users/eliot/projects/HEIR/code/mvp/applyPolicy.sh
 
 kubectl edit cm cluster-metadata -n fybrik-system
 and change theshire to UK

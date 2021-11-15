@@ -20,11 +20,11 @@ spec:
             protocol: s3
             dataformat: csv
       actions:
-      - name: RedactAction
-      - name: RemoveAction
+      - name: RedactColumn
+      - name: Statistics
       capability: copy
   chart:
-    name: ghcr.io/elsalant/fhir-to-s3-chart:0.0.1
+    name: ghcr.io/elsalant/fhir-to-s3-chart:0.0.2
   statusIndicators:
     - kind: StreamTransfer
       successCondition: status.status == SUCCEEDED
