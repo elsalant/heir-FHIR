@@ -33,11 +33,11 @@ make helm-verify
 
 go to the directory with the Helm chart and do:
 helm chart save <Helm chart directory> ghcr.io/elsalant/<chart image name>:tag   where the tag and image name need to be what is defined in Chart.yaml
-helm chart save fhir-to-s3 ghcr.io/elsalant/fhir-to-s3-chart:0.0.1
+helm chart save fhir-to-s3 ghcr.io/elsalant/fhir-to-s3-chart:0.0.2
 
 Push the chart to the repo:
 helm push ghcr.io/elsalant/<chart image name>:tag
-   helm chart push ghcr.io/elsalant/fhir-to-s3-chart:0.0.1
+   helm chart push ghcr.io/elsalant/fhir-to-s3-chart:0.0.2
 
 from /Users/eliot/projects/HEIR/code/mvp:
 Install the account, credentials and asset:

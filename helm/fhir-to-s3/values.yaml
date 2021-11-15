@@ -69,18 +69,6 @@ copy:
       role: 
       secretPath: 
 
-  transformations:
-  - name: "RedactColumn"
-    RedactColumn:
-      columns:
-      - col1
-      - col2
-      - col3
-  - name: "Statistics"
-    Statistics:
-      columns:
-      - col1
-
 nodeSelector: {}
 
 tolerations: []

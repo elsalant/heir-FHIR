@@ -20,7 +20,7 @@ from curlCommands import handleQuery
 from datetime import date, datetime, time, timedelta, timezone
 from string import Template
 
-TEST = True
+TEST = False
 
 DEFAULT_KAFKA_TOPIC = 'fhir-wp2'
 DEFAULT_KAKFA_HOST = 'kafka.fybrik-system:9092'
@@ -113,7 +113,7 @@ TEST_OBSERVATION = '{ \
     "coding": [  \
       {  \
         "system": "http://loinc.org",  \
-        "code": "ç",  \
+        "code": "15074-8",  \
         "display": "Glucose [Moles/volume] in Body Fluid"  \
       }  \
     ]  \

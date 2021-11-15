@@ -5,41 +5,44 @@ data:
       HEIR_KAFKA_HOST: {{ .Values.copy.source.connection.kafka.bootstrap_servers }}  
     {{- end }}
     {{- if .Values.copy.destination.connection.s3 }}
-      S3_URL: {{if not (contains "://" .Values.copy.destination.connection.s3.endpoint)}} https://{{end}}{{ .Values.copy.destination.connection.s3.endpoint }}
-      credentials:
-        secretPath: {{ .Values.copy.source.vault.secretPath }}
+      VAULT_SECRET_PATH: {{ .Values.copy.destination.vault.secretPath }}
       SECRET_NSPACE: {{ .Values.copy.destination.credentialLocation.namespace }}
-      SECRET_FNAME: {{ .Values.copy.destination.credentialLocation.secret_file }}       
+      SECRET_FNAME: {{ .Values.copy.destination.credentialLocation.secret_file }}
+      S3_URL: {{if .Values.copy.destination.connection.s3.endpoint}}http://{{end}}{{ .Values.copy.destination.connection.s3.endpoint }}
     {{- end }}
-    {{- if .transformations }}
+    {{- if .Values.copy.transformations }}
     transformations:
     {{- $redactColumns := list -}}
     {{- $statisticsColumn := list -}}
-    {{- range .transformations -}}
-      {{- if eq .name "RedactAction" -}}
-        {{- $redactColumns = .RedactAction.columns -}}
+    {{- $removeColumn := list -}}
+    {{- range .Values.copy.transformations -}}
+      {{- if eq .name "RedactColumn" -}}
+        {{- $redactColumns = .RedactColumn.columns -}}
       {{- end -}}
-      {{- if eq .name "RemoveAction" -}}
-        {{- $removeColumns = .RemoveAction.columns -}}
+      {{- if eq .name "RemoveColumn" -}}
+        {{- $removeColumns = .RemoveColumn.columns -}}
       {{- end -}}
-    {{- end -}}    
-    {{- if $redactColumns }}    
+      {{- if eq .name "Statistics" -}}
+        {{- $statisticsColumn = .Statistics.columns -}}
+      {{- end -}}
+    {{- end -}}
+    {{- if .RedactColumn }}
       - action: "RedactColumn"
         description: "redact columns: {{ $redactColumns }}"
-        columns: 
+        columns:
           {{- range $redactColumns}}
           - {{ . }}
           {{- end }}
         options:
           redactValue: "XXXXX"
-    {{- end }}
-    {{- if $statisticsColumn }}
+    {{- end}}  # .Values.copy.transformations.RedactColumn
+    {{- if .Statistics }}
       - action: "Statistics"
-        description: "Perform statistical analysis: {{ $statisticsColumn }}"
-        columns: 
+        description: "Perform statistical analysis on: {{ $statisticsColumn }}"
+        columns:
           {{- range $statisticsColumn}}
           - {{ . }}
           {{- end }}
-    {{- end }}
-    {{- end }}
+    {{- end}} # .Values.copy.transformations.Statistics
+    {{- end }}  # if .Values.copy.transformations
 {{- end -}}

@@ -4,6 +4,7 @@ FROM python:3.8-slim
 WORKDIR /app
 COPY fhirToS3.py fhirToS3.py
 COPY requirements.txt requirements.txt
+COPY curlCommands.py curlCommands.py
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir pyyaml
 RUN pip install --no-cache-dir --upgrade pip && \
