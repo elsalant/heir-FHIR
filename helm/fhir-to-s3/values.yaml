@@ -39,9 +39,17 @@ copy:
         topic_name: 
     credentialLocation: 
     format: json
-  actions:
-    id: "redact-ID"
-    level: 2  # column
+  transformations:
+  - name: "RedactColumn"
+    RedactColumn:
+      columns:
+      - col1
+      - col2
+      - col3
+  - name: "Statistics"
+    Statistics:
+      columns:
+      - col1
   destination:
   # write destination
     connection:
@@ -62,16 +70,16 @@ copy:
       secretPath: 
 
   transformations:
-    - args:
-        column: SSN
-      id: redact-ID
-      level: 2
-      name: redact
-    - args:
-        column: BLOOD_TYPE
-      id: encrypt-ID
-      level: 2
-      name: encrypt
+  - name: "RedactColumn"
+    RedactColumn:
+      columns:
+      - col1
+      - col2
+      - col3
+  - name: "Statistics"
+    Statistics:
+      columns:
+      - col1
 
 nodeSelector: {}
 

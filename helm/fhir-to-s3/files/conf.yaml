@@ -11,4 +11,35 @@ data:
       SECRET_NSPACE: {{ .Values.copy.destination.credentialLocation.namespace }}
       SECRET_FNAME: {{ .Values.copy.destination.credentialLocation.secret_file }}       
     {{- end }}
+    {{- if .transformations }}
+    transformations:
+    {{- $redactColumns := list -}}
+    {{- $statisticsColumn := list -}}
+    {{- range .transformations -}}
+      {{- if eq .name "RedactAction" -}}
+        {{- $redactColumns = .RedactAction.columns -}}
+      {{- end -}}
+      {{- if eq .name "RemoveAction" -}}
+        {{- $removeColumns = .RemoveAction.columns -}}
+      {{- end -}}
+    {{- end -}}    
+    {{- if $redactColumns }}    
+      - action: "RedactColumn"
+        description: "redact columns: {{ $redactColumns }}"
+        columns: 
+          {{- range $redactColumns}}
+          - {{ . }}
+          {{- end }}
+        options:
+          redactValue: "XXXXX"
+    {{- end }}
+    {{- if $statisticsColumn }}
+      - action: "Statistics"
+        description: "Perform statistical analysis: {{ $statisticsColumn }}"
+        columns: 
+          {{- range $statisticsColumn}}
+          - {{ . }}
+          {{- end }}
+    {{- end }}
+    {{- end }}
 {{- end -}}

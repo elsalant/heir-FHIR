@@ -32,8 +32,8 @@ DEFAULT_FHIR_USER = 'fhiruser'
 DEFAULT_FHIR_PW = 'change-password'
 
 DEFAULT_TIMEWINDOW = 3560 #days - should be 14
-HIGH_THRESHOLD = 8.3
-LOW_THRESHOLD = 4
+HIGH_THRESHOLD_DEFAULT = 8.3
+LOW_THRESHOLD_DEFAULT = 4
 
 PATIENT_LOOKUP = '/fhir-server/api/v4/Observation'
 BUCKET_PREFIX = '-heir-'
@@ -277,8 +277,18 @@ def apply_policy(df, policies):
             redactedData.append(meanStr+ ' ' + stdStr)
     # Calculate Time in Range, Time Above Range, Time Below Range
             numObservations = len(df)
-            tar = round((len(df.loc[df[col]>HIGH_THRESHOLD,col])/numObservations)*100)
-            tbr = round((len(df.loc[df[col]<HIGH_THRESHOLD,col])/numObservations)*100)
+            try:
+                high_threshold = df['referenceRange'][0][0]['high']['value']
+                print('high_threshold found in resource as ' + str(high_threshold))
+            except:
+                high_threshold = HIGH_THRESHOLD_DEFAULT
+            try:
+                low_threshold = df['referenceRange'][0][0]['low']['value']
+                print('low_threshold found in resource as ' + str(low_threshold))
+            except:
+                low_threshold = LOW_THRESHOLD_DEFAULT
+            tar = round((len(df.loc[df[col]>high_threshold,col])/numObservations)*100)
+            tbr = round((len(df.loc[df[col]<low_threshold,col])/numObservations)*100)
             tir = 100 - tar - tbr
         d = {
             'PATIENT_ID': df['subject.reference'][0],
@@ -381,7 +391,7 @@ def main():
 
     print("starting module!!")
 
-    CM_PATH = '/etc/conf/conf.yaml'
+    CM_PATH = '/etc/conf/conf.yaml' # from the "volumeMounts" parameter in templates/deployment.yaml
     cmDict = []
 
     try:
