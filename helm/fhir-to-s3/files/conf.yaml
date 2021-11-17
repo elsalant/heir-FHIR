@@ -1,48 +1,56 @@
 data:
 {{- if .Values.copy -}}
-    {{- if .Values.copy.source.connection.kafka }}
-      WP2_TOPIC: {{ .Values.copy.source.connection.kafka.topic_name }}
-      HEIR_KAFKA_HOST: {{ .Values.copy.source.connection.kafka.bootstrap_servers }}  
-    {{- end }}
-    {{- if .Values.copy.destination.connection.s3 }}
-      VAULT_SECRET_PATH: {{ .Values.copy.destination.vault.secretPath }}
-      SECRET_NSPACE: {{ .Values.copy.destination.credentialLocation.namespace }}
-      SECRET_FNAME: {{ .Values.copy.destination.credentialLocation.secret_file }}
-      S3_URL: {{if .Values.copy.destination.connection.s3.endpoint}}http://{{end}}{{ .Values.copy.destination.connection.s3.endpoint }}
-    {{- end }}
-    {{- if .Values.copy.transformations }}
-    transformations:
-    {{- $redactColumns := list -}}
-    {{- $statisticsColumn := list -}}
-    {{- $removeColumn := list -}}
-    {{- range .Values.copy.transformations -}}
-      {{- if eq .name "RedactColumn" -}}
-        {{- $redactColumns = .RedactColumn.columns -}}
-      {{- end -}}
-      {{- if eq .name "RemoveColumn" -}}
-        {{- $removeColumns = .RemoveColumn.columns -}}
-      {{- end -}}
-      {{- if eq .name "Statistics" -}}
-        {{- $statisticsColumn = .Statistics.columns -}}
-      {{- end -}}
-    {{- end -}}
-    {{- if .RedactColumn }}
-      - action: "RedactColumn"
-        description: "redact columns: {{ $redactColumns }}"
-        columns:
-          {{- range $redactColumns}}
-          - {{ . }}
-          {{- end }}
-        options:
-          redactValue: "XXXXX"
-    {{- end}}  # .Values.copy.transformations.RedactColumn
-    {{- if .Statistics }}
-      - action: "Statistics"
-        description: "Perform statistical analysis on: {{ $statisticsColumn }}"
-        columns:
-          {{- range $statisticsColumn}}
-          - {{ . }}
-          {{- end }}
-    {{- end}} # .Values.copy.transformations.Statistics
-    {{- end }}  # if .Values.copy.transformations
+ {{- if .Values.copy.source.connection.kafka }}
+   WP2_TOPIC: {{ .Values.copy.source.connection.kafka.topic_name }}
+   HEIR_KAFKA_HOST: {{ .Values.copy.source.connection.kafka.bootstrap_servers }}  
+ {{- end }}
+ {{- if .Values.copy.destination.connection.s3 }}
+   VAULT_SECRET_PATH: {{ .Values.copy.destination.vault.secretPath }}
+   SECRET_NSPACE: {{ .Values.copy.destination.credentialLocation.namespace }}
+   SECRET_FNAME: {{ .Values.copy.destination.credentialLocation.secret_file }}
+   S3_URL: {{if .Values.copy.destination.connection.s3.endpoint}}http://{{end}}{{ .Values.copy.destination.connection.s3.endpoint }}
+ {{- end }}
+ {{- if .Values.copy.transformations }}
+   transformations: 
+   {{- $redactColumns := list -}}
+   {{- $removeColumns := list -}}
+   {{- $Statistics := list -}}
+   {{- range .Values.copy.transformations -}}
+   {{- if eq .name "RedactColumn" -}}
+     {{- $redactColumns = .RedactColumn.columns -}}
+   {{- end -}}
+   {{- if eq .name "RemoveColumn" -}}
+    {{- $removeColumns = .RemoveColumn.columns -}}
+   {{- end -}}
+   {{- if eq .name "Statistics" -}}
+     {{- $Statistics = .Statistics.columns -}}
+   {{- end -}}
+   {{- end -}}
+ {{- if $redactColumns }}
+   - action: "Redact"
+     description: "redacting columns: {{ $redactColumns }}"
+     columns: 
+     {{- range $redactColumns}}
+       - {{ . }}
+     {{- end }}
+     options:
+       redactValue: "XXXXX"
+  {{- end }}
+  {{- if $removeColumns }}
+    - action: "RemoveColumns"
+      description: "removing columns: {{ $removeColumns }}"
+      columns: 
+      {{- range $removeColumns}}
+        - {{ . }}
+      {{- end }}
+  {{- end }}
+  {{- if $Statistics }}
+   - action: "Statistics"
+     description: "statistics on columns: {{ $Statistics }}"
+     columns:
+     {{- range $Statistics}}
+       - {{ . }}
+     {{- end }}
+  {{- end }}
+  {{- end }}
 {{- end -}}

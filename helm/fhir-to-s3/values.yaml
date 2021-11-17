@@ -40,13 +40,11 @@ copy:
     credentialLocation: 
     format: json
   transformations:
-  - name: "RedactColumn"
+  - name: RedactColumn
     RedactColumn:
       columns:
       - col1
-      - col2
-      - col3
-  - name: "Statistics"
+  - name: Statistics
     Statistics:
       columns:
       - col1

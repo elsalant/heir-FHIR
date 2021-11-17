@@ -27,6 +27,7 @@ Push the image to Docker package repo
 make docker-push
 
 Push the Helm chart to the repo
+export HELM_EXPERIMENTAL_OCI=1
 make helm-login
   helm registry login -u elsalant -p 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 ghcr.io
 make helm-verify
@@ -53,10 +54,10 @@ kubectl edit cm cluster-metadata -n fybrik-system
 and change theshire to UK
 
 Install the module
-kubectl apply -f fhirToS3module-els.yaml -n fybrik-system
+kubectl apply -f fhirToS3module.yaml -n fybrik-system
 
 Install the application (in mvp namespace)
-kubectl apply -f mvpApplication-els.yaml -n mvp
+kubectl apply -f mvpApplication.yaml -n mvp
  
 Check the upload to S3:
 curl -k --location --request POST 'https://localhost:9443/fhir-server/api/v4' --header 'Content-Type: application/fhir+json' \

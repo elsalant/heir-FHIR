@@ -15,9 +15,10 @@ from json import loads
 from kubernetes import client, config
 import base64
 import ast
+import time
 
 from curlCommands import handleQuery
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from string import Template
 
 TEST = False
@@ -242,14 +243,12 @@ def read_from_fhir(id):
     observationDF = pd.json_normalize(jsonList)
     return observationDF
 
-
 def get_policy():
     if TEST:
 #        policies = '[{"name": "Redact PII columns", "action": "RedactColumn", "columns": ["id"]}]'
         policies = '[{"name": "Statics of glucose in body volume", "action": "Statistics", "columns": ["valueQuantity.value"]}]'
 
     return (json.loads(policies))
-
 
 def apply_policy(df, policies):
     redactedData = []
@@ -392,36 +391,52 @@ def main():
     print("starting module!!")
 
     CM_PATH = '/etc/conf/conf.yaml' # from the "volumeMounts" parameter in templates/deployment.yaml
-    cmDict = []
 
-    try:
-        with open(CM_PATH, 'r') as stream:
-            cmReturn = yaml.safe_load(stream)
-        print('cmReturn = ', cmReturn)
-        cmDict = cmReturn.get('data', [])
+    cmReturn = ''
 
-        s3_URL = cmDict['S3_URL']
+# potentially the configmap is not ready yet
+    tries = 3
+    try_opening = True
+    while try_opening:
+        try:
+            try:
+                with open(CM_PATH, 'r') as stream:
+                    cmReturn = yaml.safe_load(stream)
+                try_opening = False
+            except Exception as e:
+                tries -= 1
+                print(e.args)
+                if (tries == 0):
+                    try_opening = False
+                    raise ValueError('Error reading from file! ', CM_PATH)
+                time.sleep(108)
+        except ValueError as e:
+            print(e.args)
 
-        secret_namespace = cmDict['SECRET_NSPACE']
-        secret_fname = cmDict['SECRET_FNAME']
 
-        print("secret_namespace = " + secret_namespace + ", secret_fname = " + secret_fname)
-        s3_access_key, s3_secret_key = getSecretKeys(secret_fname, secret_namespace)
-        print("access key found: " + s3_access_key + "secret_key found: " + s3_secret_key)
+    print('cmReturn = ', cmReturn)
+    cmDict = cmReturn.get('data', [])
+    print("cmDict = ", cmDict.items())
+    s3_URL = cmDict['S3_URL']
 
-        print("s3_URL = ", str(s3_URL))
+    secret_namespace = cmDict['SECRET_NSPACE']
+    secret_fname = cmDict['SECRET_FNAME']
 
-        assert s3_access_key != '', 'No s3_access key found!'
-        assert s3_secret_key != '', 'No s3_secret_key found!'
+    print("secret_namespace = " + secret_namespace + ", secret_fname = " + secret_fname)
+    s3_access_key, s3_secret_key = getSecretKeys(secret_fname, secret_namespace)
+    print("access key found: " + s3_access_key + "secret_key found: " + s3_secret_key)
 
-        connection = boto3.resource(
-            's3',
-            aws_access_key_id=s3_access_key,
-            aws_secret_access_key=s3_secret_key,
-            endpoint_url=s3_URL
-        )
-    except:
-        print("no file found " + CM_PATH)
+    print("s3_URL = ", str(s3_URL))
+
+    assert s3_access_key != '', 'No s3_access key found!'
+    assert s3_secret_key != '', 'No s3_secret_key found!'
+
+    connection = boto3.resource(
+        's3',
+        aws_access_key_id=s3_access_key,
+        aws_secret_access_key=s3_secret_key,
+        endpoint_url=s3_URL
+    )
     try:
         kafka_topic = cmDict['WP2_TOPIC']
         print('kafka_topic passed as ' + kafka_topic)
