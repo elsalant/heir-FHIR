@@ -28,7 +28,10 @@ DEFAULT_KAKFA_HOST = 'kafka.fybrik-system:9092'
 if TEST:
     DEFAULT_FHIR_HOST = 'https://localhost:9443'
 else:
-    DEFAULT_FHIR_HOST = 'ibmfhir.fybrik-system:9443'
+    DEFAULT_FHIR_HOST = 'https://ibmfhir.fybrik-system:9443'
+
+TEST_POLICY = "[{'action': 'RedactColumn', 'description': 'redacting columns: [id, valueQuantity.value]', 'columns': ['id', 'valueQuantity.value'], 'options': {'redactValue': 'XXXXX'}}, {'action': 'Statistics', 'description': 'statistics on columns: [valueQuantity.value]', 'columns': ['valueQuantity.value']}]"
+
 DEFAULT_FHIR_USER = 'fhiruser'
 DEFAULT_FHIR_PW = 'change-password'
 
@@ -236,19 +239,15 @@ def read_from_fhir(id):
     observationRecord = handleQuery(queryURL, queryString, auth, params, 'GET')
     # Strip the bundle information out and convert to data frame
     recordList = []
-    for record in observationRecord['entry']:
-        recordList.append(json.dumps(record['resource']))
+    try:
+        for record in observationRecord['entry']:
+            recordList.append(json.dumps(record['resource']))
+    except:
+        print("no entry in observationRecord!")
     jsonList = [ast.literal_eval(x) for x in recordList]
  #   observationDF = pd.DataFrame.from_records(jsonList)
     observationDF = pd.json_normalize(jsonList)
     return observationDF
-
-def get_policy():
-    if TEST:
-#        policies = '[{"name": "Redact PII columns", "action": "RedactColumn", "columns": ["id"]}]'
-        policies = '[{"name": "Statics of glucose in body volume", "action": "Statistics", "columns": ["valueQuantity.value"]}]'
-
-    return (json.loads(policies))
 
 def apply_policy(df, policies):
     redactedData = []
@@ -260,35 +259,44 @@ def apply_policy(df, policies):
     tir = ''   # time in range
     std = ''
     cleanPatientId = df['subject.reference'][0].replace('/', '-')
-    for policy in policies:
-        action = policy['action']
-        if action == 'RedactColumn':
-            for col in policy['columns']:
-                df.drop(col, inplace=True, axis=1)
-            redactedData.append(df.to_json())
-            output_results(cleanPatientId, d)
-        if action == 'Statistics':
-            for col in policy['columns']:
+    print('inside apply_policy. Length policies = ', str(len(policies)), " type(policies) = ", str(type(policies)))
+#    for policy in policies:
+    policy = policies
+    print('policy = ', str(policy))
+    action = policy['transformations'][0]['action']
+    if action == 'DeleteColumn':
+        print('DeleteColumn called!')
+        for col in policy['transformations'][0]['columns']:
+            df.drop(col, inplace=True, axis=1)
+        redactedData.append(df.to_json())
+        output_results(cleanPatientId, str(redactedData))
+    if action == 'Statistics':
+        for col in policy['transformations'][0]['columns']:
+            print('col = ', col)
+            try:
                 std = df[col].std()
-                stdStr = '{\"CGM_STD\": \"' + str(std) + '\"}'
-                mean = df[col].mean()
-                meanStr = '{\"CGM_MEAN\": \"' + str(mean) + '\"}'
-            redactedData.append(meanStr+ ' ' + stdStr)
-    # Calculate Time in Range, Time Above Range, Time Below Range
-            numObservations = len(df)
-            try:
-                high_threshold = df['referenceRange'][0][0]['high']['value']
-                print('high_threshold found in resource as ' + str(high_threshold))
             except:
-                high_threshold = HIGH_THRESHOLD_DEFAULT
-            try:
-                low_threshold = df['referenceRange'][0][0]['low']['value']
-                print('low_threshold found in resource as ' + str(low_threshold))
-            except:
-                low_threshold = LOW_THRESHOLD_DEFAULT
-            tar = round((len(df.loc[df[col]>high_threshold,col])/numObservations)*100)
-            tbr = round((len(df.loc[df[col]<low_threshold,col])/numObservations)*100)
-            tir = 100 - tar - tbr
+                print('No col ' + col + ' found!')
+                print(df.keys())
+            stdStr = '{\"CGM_STD\": \"' + str(std) + '\"}'
+            mean = df[col].mean()
+            meanStr = '{\"CGM_MEAN\": \"' + str(mean) + '\"}'
+        redactedData.append(meanStr+ ' ' + stdStr)
+# Calculate Time in Range, Time Above Range, Time Below Range
+        numObservations = len(df)
+        try:
+            high_threshold = df['referenceRange'][0][0]['high']['value']
+            print('high_threshold found in resource as ' + str(high_threshold))
+        except:
+            high_threshold = HIGH_THRESHOLD_DEFAULT
+        try:
+            low_threshold = df['referenceRange'][0][0]['low']['value']
+            print('low_threshold found in resource as ' + str(low_threshold))
+        except:
+            low_threshold = LOW_THRESHOLD_DEFAULT
+        tar = round((len(df.loc[df[col]>high_threshold,col])/numObservations)*100)
+        tbr = round((len(df.loc[df[col]<low_threshold,col])/numObservations)*100)
+        tir = 100 - tar - tbr
         d = {
             'PATIENT_ID': df['subject.reference'][0],
             'CGM_TIR': tir,
@@ -325,7 +333,7 @@ def write_to_S3(patientId, values):
         write_to_bucket(bucketName, tempFile, fName)
         print("information written to bucket ", bucketName, ' as ', fName)
 
-def read_from_kafka(consumer):
+def read_from_kafka(consumer, cmDict):
     # We want to get the patient id out of the passed Observation in order to use this to look up
     # records within the time window from FHIR
     unique_patient_ids = []
@@ -364,19 +372,32 @@ def read_from_kafka(consumer):
                 continue
             # Extract the patient id
             try:
-                patient_id = resourceDict['subject']['reference']
+                patient_id = resourceDict['subject][reference]']
             except:
-                print("no subject->reference found in record " + str(resource))
+                patient_id = resourceDict['subject_reference']   #flattened schema
+            print('patient_id = ', str(patient_id))
 
             if patient_id not in unique_patient_ids:
                 unique_patient_ids.append(patient_id)
-    return (unique_patient_ids)
+        if TEST:
+            policies = TEST_POLICY
+        else:
+            policies = cmDict
+
+ #       policyJson = json.dumps(policies)
+
+        for id in unique_patient_ids:
+            df = read_from_fhir(id)
+            filteredDF = timeWindow_filter(df)
+            redacted_df = apply_policy(filteredDF, policies)
+        if not TEST:
+            consumer.close()
 
 def output_results(patientId, outvalues):
     with open('noklus_patient_observation_template.xml', 'r') as f:
         src = Template(f.read())
         result = src.substitute(outvalues)
-        print(result)
+        print('output_results: result = ',result)
         write_to_S3(patientId, result)
     f.close()
 
@@ -393,50 +414,54 @@ def main():
     CM_PATH = '/etc/conf/conf.yaml' # from the "volumeMounts" parameter in templates/deployment.yaml
 
     cmReturn = ''
+    cmDict = {}
 
-# potentially the configmap is not ready yet
-    tries = 3
-    try_opening = True
-    while try_opening:
-        try:
+    if not TEST:
+        tries = 3
+        try_opening = True
+        while try_opening:
             try:
-                with open(CM_PATH, 'r') as stream:
-                    cmReturn = yaml.safe_load(stream)
-                try_opening = False
-            except Exception as e:
-                tries -= 1
-                print(e.args)
-                if (tries == 0):
+                try:
+                    with open(CM_PATH, 'r') as stream:
+                        cmReturn = yaml.safe_load(stream)
                     try_opening = False
-                    raise ValueError('Error reading from file! ', CM_PATH)
-                time.sleep(108)
-        except ValueError as e:
-            print(e.args)
+                except Exception as e:
+                    tries -= 1
+                    print(e.args)
+                    if (tries == 0):
+                        try_opening = False
+                        raise ValueError('Error reading from file! ', CM_PATH)
+                    time.sleep(108)
+            except ValueError as e:
+                print(e.args)
 
+        print('cmReturn = ', cmReturn)
+        if TEST:
+            cmDict = "dict_items([('WP2_TOPIC', 'fhir-wp2'), ('HEIR_KAFKA_HOST', 'kafka.fybrik-system:9092'), ('VAULT_SECRET_PATH', None), ('SECRET_NSPACE', 'fybrik-system'), ('SECRET_FNAME', 'credentials-els'), ('S3_URL', 'http://s3.eu.cloud-object-storage.appdomain.cloud'), ('transformations', [{'action': 'RedactColumn', 'description': 'redacting columns: [id valueQuantity.value]', 'columns': ['id', 'valueQuantity.value'], 'options': {'redactValue': 'XXXXX'}}, {'action': 'Statistics', 'description': 'statistics on columns: [valueQuantity.value]', 'columns': ['valueQuantity.value']}])])"
+        else:
+            cmDict = cmReturn.get('data', [])
+        print("cmDict = ", cmDict.items())
 
-    print('cmReturn = ', cmReturn)
-    cmDict = cmReturn.get('data', [])
-    print("cmDict = ", cmDict.items())
-    s3_URL = cmDict['S3_URL']
+        s3_URL = cmDict['S3_URL']
 
-    secret_namespace = cmDict['SECRET_NSPACE']
-    secret_fname = cmDict['SECRET_FNAME']
+        secret_namespace = cmDict['SECRET_NSPACE']
+        secret_fname = cmDict['SECRET_FNAME']
 
-    print("secret_namespace = " + secret_namespace + ", secret_fname = " + secret_fname)
-    s3_access_key, s3_secret_key = getSecretKeys(secret_fname, secret_namespace)
-    print("access key found: " + s3_access_key + "secret_key found: " + s3_secret_key)
+        print("secret_namespace = " + secret_namespace + ", secret_fname = " + secret_fname)
+        s3_access_key, s3_secret_key = getSecretKeys(secret_fname, secret_namespace)
+        print("access key found: " + s3_access_key + ", secret_key found: " + s3_secret_key)
 
-    print("s3_URL = ", str(s3_URL))
+        print("s3_URL = ", str(s3_URL))
 
-    assert s3_access_key != '', 'No s3_access key found!'
-    assert s3_secret_key != '', 'No s3_secret_key found!'
+        assert s3_access_key != '', 'No s3_access key found!'
+        assert s3_secret_key != '', 'No s3_secret_key found!'
 
-    connection = boto3.resource(
-        's3',
-        aws_access_key_id=s3_access_key,
-        aws_secret_access_key=s3_secret_key,
-        endpoint_url=s3_URL
-    )
+        connection = boto3.resource(
+            's3',
+            aws_access_key_id=s3_access_key,
+            aws_secret_access_key=s3_secret_key,
+            endpoint_url=s3_URL
+        )
     try:
         kafka_topic = cmDict['WP2_TOPIC']
         print('kafka_topic passed as ' + kafka_topic)
@@ -454,15 +479,7 @@ def main():
         consumer = [TEST_OBSERVATION]
     else:
         consumer = connect_to_kafka()
-    unique_id_list = read_from_kafka(consumer)
-    policyJson = get_policy()
-
-    for id in unique_id_list:
-        df = read_from_fhir(id)
-        filteredDF = timeWindow_filter(df)
-        redacted_df = apply_policy(filteredDF,policyJson)
-    if not TEST:
-        consumer.close()
+    read_from_kafka(consumer, cmDict)   #does not return from this call
 
 if __name__ == "__main__":
     main()

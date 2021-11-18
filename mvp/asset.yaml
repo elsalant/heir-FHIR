@@ -18,6 +18,6 @@ spec:
     tags:
     - healthcare
     componentsMetadata:
-      id: 
+      valueQuantity.value:
         tags:
-        - PII
+        - stats

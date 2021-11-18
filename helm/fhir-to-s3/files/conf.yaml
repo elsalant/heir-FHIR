@@ -27,7 +27,7 @@ data:
    {{- end -}}
    {{- end -}}
  {{- if $redactColumns }}
-   - action: "Redact"
+   - action: "RedactColumn"
      description: "redacting columns: {{ $redactColumns }}"
      columns: 
      {{- range $redactColumns}}
@@ -37,7 +37,7 @@ data:
        redactValue: "XXXXX"
   {{- end }}
   {{- if $removeColumns }}
-    - action: "RemoveColumns"
+    - action: "RemoveColumn"
       description: "removing columns: {{ $removeColumns }}"
       columns: 
       {{- range $removeColumns}}
