@@ -270,6 +270,13 @@ def apply_policy(df, policies):
             df.drop(col, inplace=True, axis=1)
         redactedData.append(df.to_json())
         output_results(cleanPatientId, str(redactedData))
+    if action == 'RedactColumn':
+        print('RedactColumn called!')
+        replacementStr = policy['transformations'][0]['options']['redactValue']
+        for col in policy['transformations'][0]['columns']:
+            df[col].replace(r'.', replacementStr, regex=True, inplace=True)
+        redactedData.append(df.to_json())
+        output_results(cleanPatientId, str(redactedData))
     if action == 'Statistics':
         for col in policy['transformations'][0]['columns']:
             print('col = ', col)
@@ -431,7 +438,7 @@ def main():
                     if (tries == 0):
                         try_opening = False
                         raise ValueError('Error reading from file! ', CM_PATH)
-                    time.sleep(108)
+                    time.sleep(5)
             except ValueError as e:
                 print(e.args)
 
@@ -479,7 +486,9 @@ def main():
         consumer = [TEST_OBSERVATION]
     else:
         consumer = connect_to_kafka()
-    read_from_kafka(consumer, cmDict)   #does not return from this call
+
+    while True:
+        read_from_kafka(consumer, cmDict)   #does not return from this call
 
 if __name__ == "__main__":
     main()
