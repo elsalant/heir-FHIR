@@ -169,8 +169,8 @@ def connect_to_kafka():
         consumer = KafkaConsumer(
             kafka_topic,
             bootstrap_servers=[kafka_host],
-            group_id=kafka_topic,
-            auto_offset_reset='latest',
+            group_id='els',
+            auto_offset_reset='earliest',
             enable_auto_commit=True,
             value_deserializer=lambda x: loads(x.decode('utf-8')))
     except:
@@ -314,7 +314,7 @@ def apply_policy(df, policies):
         }
         output_results(cleanPatientId,d)
         redactedData = d
-    print("returning redacted data " + str(redactedData))
+
 
 def timeWindow_filter(df):
     # drop rows that are outside of the timeframe
@@ -331,14 +331,16 @@ def write_to_S3(patientId, values):
         raise AssertionError('Too many matching buckets found! ' + len(matchingBucket) + ' ' + str(matchingBucket))
     elif len(matchingBucket) == 1:
         bucketName = matchingBucket[0]
+        print('matching bucket found: ' + bucketName)
     else:
         bucketName, response = create_bucket(bucketNamePrefix, connection)
-        tempFile = contentToFile(values, patientId)
-        # Generate a random prefix to the resource type
-        fName = ''.join([str(uuid.uuid4().hex[:6]), patientId])
-        print("fName = " + fName + "patientId = " + patientId)
-        write_to_bucket(bucketName, tempFile, fName)
-        print("information written to bucket ", bucketName, ' as ', fName)
+        print("new bucket being created:" + bucketNamePrefix)
+    tempFile = contentToFile(values, patientId)
+    # Generate a random prefix to the resource type
+    fName = ''.join([str(uuid.uuid4().hex[:6]), patientId])
+    print("fName = " + fName + "patientId = " + patientId)
+    write_to_bucket(bucketName, tempFile, fName)
+    print("information written to bucket ", bucketName, ' as ', fName)
 
 def read_from_kafka(consumer, cmDict):
     # We want to get the patient id out of the passed Observation in order to use this to look up
@@ -397,15 +399,14 @@ def read_from_kafka(consumer, cmDict):
             df = read_from_fhir(id)
             filteredDF = timeWindow_filter(df)
             redacted_df = apply_policy(filteredDF, policies)
-        if not TEST:
-            consumer.close()
 
 def output_results(patientId, outvalues):
     with open('noklus_patient_observation_template.xml', 'r') as f:
         src = Template(f.read())
         result = src.substitute(outvalues)
-        print('output_results: result = ',result)
+        print('---> output_results: patientId = ' + patientId + ' result = ',result)
         write_to_S3(patientId, result)
+        print('--> after write_to_S3')
     f.close()
 
 def main():
