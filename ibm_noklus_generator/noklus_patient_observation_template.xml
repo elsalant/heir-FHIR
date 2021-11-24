@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<rapport versjon="SX_3.0.7097.22866">
+  <pasient pasientid="$PATIENT_ID">
+      <variabel navn="CGM_MEAN_GLUCOSE">
+         <verdi>$CGM_MEAN</verdi>
+      </variabel>
+      <variabel navn="CGM_STDDEV_GLUCOSE">
+         <verdi>$CGM_STD</verdi>
+      </variabel>
+      <variabel navn="CGM_TIME_ABOVE_RANGE">
+         <verdi>$CGM_TAR</verdi>
+      </variabel>
+      <variabel navn="CGM_TIME_BELOW_RANGE">
+         <verdi>$CGM_TBR</verdi>
+      </variabel>
+      <variabel navn="CGM_TIME_IN_RANGE">
+         <verdi>$CGM_TIR</verdi>
+      </variabel>
+  </pasient>
+ </rapport>
+

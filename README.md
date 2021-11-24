@@ -1,9 +1,11 @@
-Build the IBM FHIR Server docker image:
+  Build the IBM FHIR Server docker image:
 
 >> To start the IBM FHIR Server docker image:
 
 #kind load docker-image ibmcom/ibm-fhir-server_els:latest --name <cluster name>
-kind load docker-image ghcr.io/elsalant/ibm-fhir-server_els:latest --name heir-mvp
+# OLD - pulls from repo kind load docker-image ghcr.io/elsalant/ibm-fhir-server_els:latest --name heir-mvp
+
+>> Install fybrik from the instructions in: https://fybrik.io/v0.5/get-started/quickstart/
 
 #helm install ibmfhir /Users/eliot/projects/HEIR/code/helm/ibmfhir_server-0.1.0.tgz -n fybrik-system
 helm install ibmfhir /Users/eliot/projects/HEIR/code/helm/ibmfhir_server -n fybrik-system

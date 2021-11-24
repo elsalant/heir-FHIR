@@ -1,0 +1,1 @@
+-e git+https://github.com/smart-on-fhir/client-py@6047277daa31f10931e44ed19e92128298cdb64b#egg=fhirclient
