@@ -224,8 +224,10 @@ def getSecretKeys(secret_name, secret_namespace):
         config.load_kube_config()   # useful for testing outside of k8s
     v1 = client.CoreV1Api()
     secret = v1.read_namespaced_secret(secret_name, secret_namespace)
-    accessKeyID = base64.b64decode(secret.data['access_key_id'])
-    secretAccessKey = base64.b64decode(secret.data['secret_access_key'])
+ #   accessKeyID = base64.b64decode(secret.data['access_key_id'])
+    accessKeyID = base64.b64decode(secret.data['access_key'])
+ #   secretAccessKey = base64.b64decode(secret.data['secret_access_key'])
+    secretAccessKey = base64.b64decode(secret.data['secret_key'])
     return(accessKeyID.decode('ascii'), secretAccessKey.decode('ascii'))
 
 
@@ -317,6 +319,7 @@ def apply_policy(df, policies):
 
 
 def timeWindow_filter(df):
+    print("keys = ", df.keys())
     # drop rows that are outside of the timeframe
     df.drop(df.loc[(pd.to_datetime(df['effectivePeriod.start'], utc=True) + timedelta(days=time_window) < datetime.now(timezone.utc)) | (df['resourceType'] != 'Observation')].index, inplace=True)
     return df
@@ -342,7 +345,7 @@ def write_to_S3(patientId, values):
     write_to_bucket(bucketName, tempFile, fName)
     print("information written to bucket ", bucketName, ' as ', fName)
 
-def read_from_kafka(consumer, cmDict):
+def read_and_process_from_kafka(consumer, cmDict):
     # We want to get the patient id out of the passed Observation in order to use this to look up
     # records within the time window from FHIR
     unique_patient_ids = []
@@ -489,7 +492,7 @@ def main():
         consumer = connect_to_kafka()
 
     while True:
-        read_from_kafka(consumer, cmDict)   #does not return from this call
+        read_and_process_from_kafka(consumer, cmDict)   #does not return from this call
 
 if __name__ == "__main__":
     main()
