@@ -28,4 +28,4 @@
 --user "fhiruser:change-password" --data-binary  "@https://raw.githubusercontent.com/elsalant/heir-FHIR/main/data/diabetes/samplePatient.json"
 
 12. The emulator can be run:
-    python3 observationGenerator.py
+    python3 python/observationGenerator.py
