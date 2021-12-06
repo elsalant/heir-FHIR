@@ -266,19 +266,24 @@ def apply_policy(df, policies):
     policy = policies
     print('policy = ', str(policy))
     action = policy['transformations'][0]['action']
+    if action == '':
+        output_results_parquet(cleanPatientId, str(df.to_json()))
+        return
     if action == 'DeleteColumn':
         print('DeleteColumn called!')
         for col in policy['transformations'][0]['columns']:
             df.drop(col, inplace=True, axis=1)
         redactedData.append(df.to_json())
-        output_results(cleanPatientId, str(redactedData))
+        output_results_parquet(cleanPatientId, str(redactedData))
+
     if action == 'RedactColumn':
         print('RedactColumn called!')
         replacementStr = policy['transformations'][0]['options']['redactValue']
         for col in policy['transformations'][0]['columns']:
             df[col].replace(r'.', replacementStr, regex=True, inplace=True)
         redactedData.append(df.to_json())
-        output_results(cleanPatientId, str(redactedData))
+        output_results_parquet(cleanPatientId, str(redactedData))
+
     if action == 'Statistics':
         for col in policy['transformations'][0]['columns']:
             print('col = ', col)
@@ -314,8 +319,9 @@ def apply_policy(df, policies):
             'CGM_MEAN': mean,
             'CGM_STD': std
         }
-        output_results(cleanPatientId,d)
+        output_results_csv(cleanPatientId,d)
         redactedData = d
+        return
 
 
 def timeWindow_filter(df):
@@ -403,14 +409,17 @@ def read_and_process_from_kafka(consumer, cmDict):
             filteredDF = timeWindow_filter(df)
             redacted_df = apply_policy(filteredDF, policies)
 
-def output_results(patientId, outvalues):
+def output_results_csv(patientId, outvalues):
     with open('noklus_patient_observation_template.xml', 'r') as f:
         src = Template(f.read())
         result = src.substitute(outvalues)
-        print('---> output_results: patientId = ' + patientId + ' result = ',result)
+        print('---> output_results_csv: patientId = ' + patientId + ' result = ',result)
         write_to_S3(patientId, result)
         print('--> after write_to_S3')
     f.close()
+
+def output_results_parquet(patientID, outvalues):
+    pass
 
 def main():
     global connection
