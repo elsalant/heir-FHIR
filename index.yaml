@@ -1,0 +1,14 @@
+apiVersion: v1
+entries:
+  ibmfhir_server:
+  - apiVersion: v2
+    appVersion: 1.1.0
+    created: "2021-12-09T16:24:55.866501+02:00"
+    description: A Helm chart for Kubernetes
+    digest: c549b39e975ddae3d9eb609e9256b5be10de5c03cf2fbc03becace420f4a9e09
+    name: ibmfhir_server
+    type: application
+    urls:
+    - helm/ibmfhir_server-0.1.0.tgz
+    version: 0.1.0
+generated: "2021-12-09T16:24:55.865594+02:00"
