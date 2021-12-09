@@ -3,7 +3,7 @@
    helm repo add bitnami https://charts.bitnami.com/bitnami
    helm install kafka bitnami/kafka -n fybrik-system
 3. Start the IBM FHIR server with Interceptor
-    helm install ibmfhir ghcr.io/elsalant/ibmfhir_server:v1 -n fybrik-system
+    helm install ibmfhir helm/ibmfhir_server -n fybrik-system
 4. Create a namespace for mvp application use
    kubectl create namespace mvp
 5. Install datashim:
