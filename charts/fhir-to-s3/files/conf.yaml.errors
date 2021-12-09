@@ -1,0 +1,30 @@
+data:
+{{- if .Values.copy -}}
+    {{- if .Values.copy.source.connection.kafka }}
+      WP2_TOPIC: {{ .Values.copy.source.connection.kafka.topic_name }}
+      HEIR_KAFKA_HOST: {{ .Values.copy.source.connection.kafka.bootstrap_servers }}  
+    {{- end }}
+    {{- if .Values.copy.destination.connection.s3 }}
+      VAULT_SECRET_PATH: {{ .Values.copy.destination.vault.secretPath }}
+      SECRET_NSPACE: {{ .Values.copy.destination.credentialLocation.namespace }}
+      SECRET_FNAME: {{ .Values.copy.destination.credentialLocation.secret_file }}
+      S3_URL: {{if .Values.copy.destination.connection.s3.endpoint}}http://{{end}}{{ .Values.copy.destination.connection.s3.endpoint }}
+    {{ end }}
+    {{- if .Values.copy.transformations }}
+    {{- range .Values.copy.transformations -}}
+      {{- if eq .name "RedactColumn" -}}
+        action: "RedactColumn"
+        description: {"redact columns: {{ .RedactColumn.columns -}}}"
+        options:  {redactValue: "XXXXX"}
+      {{ end }}
+      {{- if eq .name "RemoveColumn" -}}
+        action: "RemoveColumn"
+        description: {"remove columns: {{ .RemoveColumn.columns -}}}"
+      {{ end}}
+      {{- if eq .name "Statistics" -}}
+        action: "Statistics"
+        description: {"Perform statistical analysis on: {{ .Statistics.columns -}}}"
+      {{ end }}
+    {{- end -}}
+    {{- end }} 
+{{- end -}}
