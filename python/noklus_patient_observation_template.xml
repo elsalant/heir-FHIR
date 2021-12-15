@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<rapport praksisnavn="Pasientrapportert" applikasjon="<HEIR>">
+  <pasient pasientid="17cb2a283ed-301ac2df-6b2b-49dc-87e5-27aa2efece9d">
+      <variabel navn="CGM_MEAN_GLUCOSE" dato="2021-01-31">
+         <verdi>4.05</verdi>
+      </variabel>
+      <variabel navn="CGM_STDDEV_GLUCOSE">
+         <verdi>$CGM_STD</verdi>
+      </variabel>
+      <variabel navn="CGM_TIME_ABOVE_RANGE">
+         <verdi>$CGM_TAR</verdi>
+      </variabel>
+      <variabel navn="CGM_TIME_BELOW_RANGE">
+         <verdi>$CGM_TBR</verdi>
+      </variabel>
+      <variabel navn="CGM_TIME_IN_RANGE">
+         <verdi>$CGM_TIR</verdi>
+      </variabel>
+  </pasient>
+ </rapport>
+
