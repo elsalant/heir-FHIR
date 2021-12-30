@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "sqltofhir.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "sqltofhir.fullname" . }}
+    helm.sh/chart: {{ include "sqltofhir.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: 8080
+      protocol: TCP
+      name: grpc
+  selector:
+    app.kubernetes.io/name: {{ include "sqltofhir.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}

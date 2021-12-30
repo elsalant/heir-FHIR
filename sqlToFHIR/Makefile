@@ -1,0 +1,106 @@
+export DOCKER_USERNAME ?= salant
+export DOCKER_HOSTNAME ?= github.ibm.com
+export DOCKER_PASSWORD ?= d20e958fd8c1a3ce7443c50a27e5bb6a2ac082ae
+# FOR github.com - i.e. docker khostname ghcr.io
+# export DOCKER_PASSWORD ?= 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
+export DOCKER_NAMESPACE ?= salant
+export DOCKER_TAGNAME ?= v1
+
+export HELM_TAGNAME ?= 0.0.1
+export HELM_TOKEN ?= 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
+export HELM_USERNAME ?= elsalant
+export HELM_HOSTNAME ?= ghcr.io
+
+export REPO_HOSTNAME ?= ghcr.io
+export REPO_USERNAME ?= elsalant
+
+DOCKER_IMG_NAME ?= sql-to-fhir
+CHART_IMG_NAME ?= sql-to-fhir-chart
+DOCKER_FILE ?= Dockerfile
+DOCKER_CONTEXT ?= .
+
+APP_IMG ?= ${REPO_HOSTNAME}/${REPO_USERNAME}/${DOCKER_IMG_NAME}:${DOCKER_TAGNAME}
+CHART_IMG ?= ${REPO_HOSTNAME}/${REPO_USERNAME}/${CHART_IMG_NAME}:${HELM_TAGNAME}
+CHART ?= ${DOCKER_IMG_NAME}
+
+.PHONY: docker-all
+docker-all: docker-build docker-push
+
+.PHONY: docker-build
+docker-build:
+	docker build $(DOCKER_CONTEXT) -t ${APP_IMG} -f $(DOCKER_FILE)
+
+.PHONY: docker-push
+docker-push:
+	docker login
+	docker push ${APP_IMG}
+
+.PHONY: docker-rmi
+docker-rmi:
+	docker rmi ${APP_IMG} || true
+
+HELM_VALUES ?= 
+
+CHART := ${DOCKER_HOSTNAME}/${DOCKER_IMG_NAME}
+HELM_RELEASE ?= rel1-${DOCKER_IMG_NAME}
+TEMP := /tmp
+
+export HELM_EXPERIMENTAL_OCI=1
+export GODEBUG=x509ignoreCN=0
+
+.PHONY: helm-login
+helm-login: 
+ifneq (${HELM_PASSWORD},)
+	helm registry login -u "${HELM_USERNAME}" -p "${HELM_PASSWORD}" ${HELM_HOSTNAME}
+endif
+
+.PHONY: helm-verify
+helm-verify: 
+	helm lint ${CHART}
+	helm install ${HELM_RELEASE} ${CHART} ${HELM_VALUES}
+
+.PHONY: helm-uninstall
+helm-uninstall: 
+	helm uninstall ${HELM_RELEASE} || true
+
+.PHONY: helm-install
+helm-install: 
+	helm install ${HELM_RELEASE} ${CHART} ${HELM_VALUES}
+
+.PHONY: helm-chart-push
+helm-chart-push: helm-login 
+	helm chart save ${CHART} ${CHART_IMG}
+	helm chart list ${CHART_IMG}
+	helm chart push ${CHART_IMG}
+	helm chart remove ${CHART_IMG}
+	helm uninstall ${HELM_RELEASE} || true
+
+.PHONY: helm-chart-pull
+helm-chart-pull: helm-login 
+	helm chart pull ${CHART_IMG} 
+	helm chart list
+
+.PHONY: helm-chart-list
+helm-chart-list: 
+	helm chart list
+
+.PHONY: helm-chart-install
+helm-chart-install: 
+	helm chart export --destination=${TEMP} ${CHART_IMG} 
+	helm install ${HELM_RELEASE} ${TEMP}/${CHART} ${HELM_VALUES}
+	helm list
+
+.PHONY: helm-template
+helm-template: 
+	helm template ${HELM_RELEASE} ${CHART} ${HELM_VALUES}
+
+.PHONY: helm-debug
+helm-debug: helm
+	helm template ${HELM_RELEASE} ${CHART} ${HELM_VALUES} --debug
+
+.PHONY: helm-actions
+helm-actions:
+	helm show values ${CHART} | yq -y -r .actions
+
+.PHONY: helm-all
+helm-all: helm-verify helm-chart-push helm-chart-pull helm-uninstall helm-chart-install

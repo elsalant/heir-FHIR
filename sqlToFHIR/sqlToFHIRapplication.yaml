@@ -1,0 +1,20 @@
+apiVersion: app.fybrik.io/v1alpha1
+kind: FybrikApplication
+metadata:
+  name: fhirnotebook
+  namespace: sql-fhir
+  labels:
+    app: fhirnotebook
+spec:
+  selector: 
+    workloadSelector:
+      matchLabels: 
+        app: fybrik-system/ibmfhir 
+  appInfo:
+   intent: sql-fhir-demo
+  data:
+    - dataSetID: "sql-fhir/observation-json"
+      requirements:
+        interface: 
+          protocol: s3
+          dataformat: csv

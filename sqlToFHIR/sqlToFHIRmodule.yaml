@@ -1,0 +1,37 @@
+# Copyright 2020 IBM Corp.
+# SPDX-License-Identifier: Apache-2.0
+
+---
+apiVersion: app.fybrik.io/v1alpha1
+kind: FybrikModule
+metadata:
+  name: sqltofhir
+  namespace: fybrik-system
+  labels:
+    name: sqlToFHIR
+    version: 0.1.0 
+spec:
+  type:  service  
+  capabilities:
+    - capability: read
+      actions:
+        - name: RedactColumn
+        - name: Statistics
+      api:
+        endpoint:
+          port: 5559
+          scheme: http
+        protocol: s3
+        dataformat: csv
+      supportedInterfaces:
+        - source:
+            protocol: s3
+            dataformat: csv
+  chart:
+    name: ghcr.io/elsalant/sql-to-fhir-chart:0.0.1
+  statusIndicators:
+    - kind: StreamTransfer
+      successCondition: status.status == SUCCEEDED
+      failureCondition: status.status == FAILED
+      errorMessage: status.error
+

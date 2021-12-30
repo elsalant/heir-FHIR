@@ -1,0 +1,24 @@
+apiVersion: katalog.fybrik.io/v1alpha1
+kind: Asset
+metadata:
+  name: observation-json
+  namespace: sql-fhir
+spec:
+  secretRef: 
+    name: "" 
+  assetDetails:
+    dataFormat: csv
+    connection:
+      type: s3
+      s3:
+        endpoint: "http://127.0.0.1:5559/"
+        bucket: notused
+        objectKey: "notused"
+  assetMetadata:
+    geography: UK
+    tags:
+    - healthcare
+    componentsMetadata:
+      id:
+        tags:
+        - PII
