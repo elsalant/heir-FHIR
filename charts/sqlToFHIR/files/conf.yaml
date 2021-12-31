@@ -1,56 +1,54 @@
+
+{{- if .Values.read -}}
 data:
-{{- if .Values.copy -}}
- {{- if .Values.copy.source.connection.kafka }}
-   WP2_TOPIC: {{ .Values.copy.source.connection.kafka.topic_name }}
-   HEIR_KAFKA_HOST: {{ .Values.copy.source.connection.kafka.bootstrap_servers }}  
- {{- end }}
- {{- if .Values.copy.destination.connection.s3 }}
-   VAULT_SECRET_PATH: {{ .Values.copy.destination.vault.secretPath }}
-   SECRET_NSPACE: {{ .Values.copy.destination.credentialLocation.namespace }}
-   SECRET_FNAME: {{ .Values.copy.destination.credentialLocation.secret_file }}
-   S3_URL: {{if .Values.copy.destination.connection.s3.endpoint}}http://{{end}}{{ .Values.copy.destination.connection.s3.endpoint }}
- {{- end }}
- {{- if .Values.copy.transformations }}
-   transformations: 
-   {{- $redactColumns := list -}}
-   {{- $removeColumns := list -}}
-   {{- $Statistics := list -}}
-   {{- range .Values.copy.transformations -}}
-   {{- if eq .name "RedactColumn" -}}
-     {{- $redactColumns = .RedactColumn.columns -}}
-   {{- end -}}
-   {{- if eq .name "RemoveColumn" -}}
-    {{- $removeColumns = .RemoveColumn.columns -}}
-   {{- end -}}
-   {{- if eq .name "Statistics" -}}
-     {{- $Statistics = .Statistics.columns -}}
-   {{- end -}}
-   {{- end -}}
- {{- if $redactColumns }}
-   - action: "RedactColumn"
-     description: "redacting columns: {{ $redactColumns }}"
-     columns: 
-     {{- range $redactColumns}}
-       - {{ . }}
-     {{- end }}
-     options:
-       redactValue: "XXXXX"
-  {{- end }}
-  {{- if $removeColumns }}
-    - action: "RemoveColumn"
-      description: "removing columns: {{ $removeColumns }}"
-      columns: 
-      {{- range $removeColumns}}
-        - {{ . }}
-      {{- end }}
-  {{- end }}
-  {{- if $Statistics }}
-   - action: "Statistics"
-     description: "statistics on columns: {{ $Statistics }}"
-     columns:
-     {{- range $Statistics}}
-       - {{ . }}
-     {{- end }}
-  {{- end }}
-  {{- end }}
+    {{- if .Values.read.source.connection.kafka }}
+      WP2_TOPIC: {{ .Values.read.source.connection.kafka.topic_name }}
+      HEIR_KAFKA_HOST: {{ .Values.read.source.connection.kafka.bootstrap_servers }}  
+    {{- end }}
+    {{- if .Values.read.transformations }}
+    transformations:
+    {{- $redactColumns := list -}}
+    {{- $statisticsColumn := list -}}
+    {{- $removeColumns := list -}}
+    {{- range .Values.read.transformations -}}
+      {{- if eq .name "RemoveColumn" -}}
+        {{- $removeColumns = .RemoveColumn.columns -}}
+      {{- end -}}
+      {{- if eq .name "Statistics" -}}
+        {{- $statisticsColumn = .Statistics.columns -}}
+      {{- end -}}
+      {{- if eq .name "RedactColumn" -}}
+        {{- $redactColumns = .RedactColumn.columns -}}
+      {{- end -}}
+    {{- end -}}   # range
+
+    {{ range .Values.read.transformations }} 
+      {{- if eq .name "RemoveColumn" -}}
+        - action: "RemoveColumn"
+        description: "remove columns: {{ $removeColumns -}}"
+        columns:
+          {{- range $removeColumns}}
+          - {{ . }}
+          {{- end }}
+      {{- end }}   # if RemoveColumn
+      {{- if eq .name "RedactColumn" -}}
+        - action: "RedactColumn"
+        description: "redact columns: {{ $redactColumns }}"
+        columns:
+          {{- range $redactColumns}}
+          - {{ . }}
+          {{- end }}
+        options:
+          redactValue: "XXXXX"
+      {{- end }}   # if RedactColumn
+      {{- if eq .name "Statistics" -}}
+        - action: "Statistics"
+        description: "Perform statistical analysis on: {{ $statisticsColumn }}"
+        columns:
+         {{- range $statisticsColumn}}
+         - {{ . }}
+         {{- end }}
+      {{- end }}   #if Statistics
+    {{- end}}   # range .Values.read.transformations
+ {{- end }}  # if .Values.read.transformations
 {{- end -}}

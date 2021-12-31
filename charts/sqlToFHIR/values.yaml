@@ -30,39 +30,30 @@ resources: {}
   #  memory: 128Mi
 
 read:
-  # Read source
+#- assetID: "test1"
   source:
-    connection:
-      name: csv
-    credentialLocation: 
-    format: json
-  transformations:
-  - name: RedactColumn
-    RedactColumn:
-      columns:
-      - col1
-  - name: Statistics
-    Statistics:
-      columns:
-      - col1
-  destination:
-  # write destination
     connection:
       name: s3
       s3:
-        bucket: 
-        endpoint: 
-        object_key: 
+        bucket:
+        endpoint:
+        object_key:
       type: 2
     credentialLocation: 
-      namespace: fybrik-system
-      secret_file: credentials-els
-    format: csv
-    vault:
-      address:
-      authPath: 
-      role: 
-      secretPath: 
+    format: json
+#  transformations:
+#  - name: "RemoveColumn"
+#    RemoveColumn:
+#      columns:
+#        - col1
+#  - name: "RedactColumn"
+#    RedactColumn:
+#      columns:
+#        - col1
+#  - name: "Statistics"
+#    Statistics:
+#      columns:
+#        - col1
 
 nodeSelector: {}
 
