@@ -30,7 +30,7 @@ resources: {}
   #  memory: 128Mi
 
 read:
-#- assetID: "test1"
+- assetID: "test1"
   source:
     connection:
       name: s3
