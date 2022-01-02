@@ -8,12 +8,9 @@ import urllib.parse
 import json
 import time
 from datetime import date, datetime, timedelta, timezone
-from json import loads
 import pandas as pd
 import os
-import boto3
 import re
-import ast
 import base64
 
 FLASK_PORT_NUM = 5559  # this application
@@ -22,12 +19,12 @@ ACCESS_DENIED_CODE = 403
 ERROR_CODE = 406
 VALID_RETURN = 200
 
-TEST = True
+TEST = False
 
 if TEST:
     DEFAULT_FHIR_HOST = 'https://localhost:9443/fhir-server/api/v4/'
 else:
-    DEFAULT_FHIR_HOST = 'https://ibmfhir.fybrik-system:9443/'
+    DEFAULT_FHIR_HOST = 'https://ibmfhir.fybrik-system:9443/fhir-server/api/v4/'
 DEFAULT_FHIR_USER = 'fhiruser'
 DEFAULT_FHIR_PW = 'change-password'
 
@@ -58,6 +55,7 @@ def handleQuery(queryGatewayURL, queryString, auth, params, method):
     except Exception as e:
       print("Exception in handleQuery, curlString = " + curlString + ", auth = " + str(auth))
       print(e.args)
+      return(ERROR_CODE)
 
     print("curl request = " + curlify.to_curl(r.request))
  #   if r.status_code != 200:

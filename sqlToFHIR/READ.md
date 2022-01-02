@@ -22,8 +22,11 @@ kubectl apply -f /Users/eliot/projects/HEIR/code/sqlToFHIR/sqlToFHIRmodule.yaml 
 kubectl apply -f /Users/eliot/projects/HEIR/code/sqlToFHIR/sqlToFHIRapplication
 9. Test
 a) Load database 
+kubectl port-forward svc/ibmfhir -n fybrik-system 9443:9443
 /Users/eliot/projects/HEIR/code/sqlToFHIR/createPatient.sh
-b) curl http://localhost:5559/Patient
+b) Port-forward pod in fybrik-blueprints
+eg: kubectl port-forward pod/fhirnotebook-sql-fhir-sqltofhir-59d350fcc6-sqltofhir-chartjhwmc -n fybrik-blueprints 5559:5559
+c) curl http://localhost:5559/Patient
 
 DEVELOPMENT
 
@@ -37,7 +40,7 @@ make docker-push
 Push the Helm chart to the repo
 export HELM_EXPERIMENTAL_OCI=1
 make helm-login
-  helm registry login -u elsalant -p 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 ghcr.io
+  helm registry login -u elsalant -p <PASSWORD> ghcr.io
 make helm-verify
 
 go to the directory with the Helm chart and do:
