@@ -36,18 +36,17 @@ Push the image to Docker package repo
 make docker-push
 
 2. Push the Helm chart to the repo
-export HELM_EXPERIMENTAL_OCI=1
-make helm-login
-  helm registry login -u elsalant -p <PASSWORD> ghcr.io
+export HELM_EXPERIMENTAL_OCI=1  
+helm registry login -u elsalant -p \<PASSWORD> ghcr.io
 
-Package the chart:
-helm package <ROOT>/charts/sqlToFHIR
+Package the chart:  
+helm package \<ROOT>/charts/sqlToFHIR
 
 3. Update the image.yaml file  
 cd <ROOT>
 helm repo index --url https://elsalant.github.io/heir-FHIR/ --merge index.yaml .
 4. Push the changed files (including the index file) to github repo
-git status
-git add <....>
-git commit -m 'updated files'
-git push 
+- git status
+- git add <....>
+- git commit -m 'updated files'
+- git push 
