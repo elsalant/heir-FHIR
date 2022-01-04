@@ -60,8 +60,8 @@ ingress:
 
 envs:
   enabled: true
-  name: HEIR_KAFKA_SERVER
-  value: kafka:9092
+  name: BOOTSTRAP_DB
+  value: true
 
 persistence:
   enabled: false

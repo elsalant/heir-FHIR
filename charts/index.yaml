@@ -3,12 +3,12 @@ entries:
   ibmfhir_orig:
   - apiVersion: v2
     appVersion: 1.1.0
-    created: "2022-01-03T16:59:10.737434483+02:00"
+    created: "2022-01-03T17:44:53.564578692+02:00"
     description: A Helm chart for Kubernetes
     digest: 2742559b9366c12ed207a9aaccde5bac4e3e6f792647a7881dff313b055b3315
     name: ibmfhir_orig
     type: application
     urls:
-    - https://github.com/elsalant/heir-FHIR.git/ibmfhir_orig-0.1.0.tgz
+    - https://elsalant.github.io/heir-FHIR/ibmfhir_orig-0.1.0.tgz
     version: 0.1.0
-generated: "2022-01-03T16:59:10.736793447+02:00"
+generated: "2022-01-03T17:44:53.563934475+02:00"
