@@ -3,9 +3,19 @@ entries:
   ibmfhir_orig:
   - apiVersion: v2
     appVersion: 1.1.0
-    created: "2022-01-03T17:52:11.604709297+02:00"
+    created: "2022-01-04T13:59:00.824734092+02:00"
     description: A Helm chart for Kubernetes
-    digest: 2742559b9366c12ed207a9aaccde5bac4e3e6f792647a7881dff313b055b3315
+    digest: afe321542d76e8e2adf9a5280f7fffe6ec4a40ceb6b4292cba922501bc504592
+    name: ibmfhir_orig
+    type: application
+    urls:
+    - https://elsalant.github.io/heir-FHIR/charts/ibmfhir_orig-0.2.0.tgz
+    version: 0.2.0
+  - apiVersion: v2
+    appVersion: 1.1.0
+    created: "2022-01-04T13:59:00.824173987+02:00"
+    description: A Helm chart for Kubernetes
+    digest: 7e8793983cb7a6f9be89a4a2c276db2e764d6c4b93ae027ce016035836fc945d
     name: ibmfhir_orig
     type: application
     urls:
@@ -14,7 +24,7 @@ entries:
   ibmfhir_server:
   - apiVersion: v2
     appVersion: 1.1.0
-    created: "2022-01-03T17:52:11.605163401+02:00"
+    created: "2022-01-04T13:59:00.825299199+02:00"
     description: A Helm chart for Kubernetes
     digest: c549b39e975ddae3d9eb609e9256b5be10de5c03cf2fbc03becace420f4a9e09
     name: ibmfhir_server
@@ -22,4 +32,4 @@ entries:
     urls:
     - https://elsalant.github.io/heir-FHIR/helm/ibmfhir_server-0.1.0.tgz
     version: 0.1.0
-generated: "2022-01-03T17:52:11.604121685+02:00"
+generated: "2022-01-04T13:59:00.823470212+02:00"
