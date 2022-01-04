@@ -4,28 +4,27 @@ helm repo add elsheir https://elsalant.github.io/heir-FHIR/
 1. Install fybrik from the instructions in: https://fybrik.io/v0.5/get-started/quickstart/
 2. Start the IBM FHIR server service (out-of-box version):
 helm install ibmfhir elsheir/ibmfhir_orig -n fybrik-system
-3. Create a namespace for the sqlfhir demo
+3. Create a namespace for the sqlfhir demo:  
 kubectl create namespace sql-fhir
 3. Pull the files:
 git pull https://github.com/elsalant/heir-FHIR.git
-3. Install datashim:
-#kubectl apply -f https://raw.githubusercontent.com/datashim-io/datashim/master/release-tools/manifests/dlf.yaml
-4. Install the policy to some <ROOT>
-<ROOT>/sqlToFHIR/applyPolicy.sh
+4. Install the policy:  
+\<ROOT>/sqlToFHIR/applyPolicy.sh
 5. kubectl edit cm cluster-metadata -n fybrik-system
 and change theshire to UK
-6. kubectl apply -f <ROOT>/sqlToFHIR/asset.yaml
+6. kubectl apply -f \<ROOT>/sqlToFHIR/asset.yaml
 7. Apply the module
-kubectl apply -f <ROOT>/sqlToFHIR/sqlToFHIRmodule.yaml -n sql-fhir
+kubectl apply -f \<ROOT>/sqlToFHIR/sqlToFHIRmodule.yaml  
 8. Apply the application
-kubectl apply -f <ROOT>/sqlToFHIR/sqlToFHIRapplication
+kubectl apply -f \<ROOT>/sqlToFHIR/sqlToFHIRapplication
 9. Test
-a) Load database 
+- a) Load database 
 kubectl port-forward svc/ibmfhir -n fybrik-system 9443:9443
-<ROOT>/sqlToFHIR/createPatient.sh
-b) Port-forward pod in fybrik-blueprints
-eg: kubectl port-forward pod/fhirnotebook-sql-fhir-sqltofhir-59d350fcc6-sqltofhir-chartjhwmc -n fybrik-blueprints 5559:5559
-c) curl http://localhost:5559/Patient
+\<ROOT>/sqlToFHIR/createPatient.sh
+- b) Port-forward pod in fybrik-blueprints
+ kubectl get pods -n fybrik-blueprints
+eg: kubectl port-forward pod/\<POD ID> -n fybrik-blueprints 5559:5559
+- c) curl http://localhost:5559/Patient
 
 DEVELOPMENT
 
