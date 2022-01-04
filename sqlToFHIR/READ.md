@@ -1,3 +1,7 @@
+This is an example of Fybrik read module that uses REST protocol to connect to a FHIR server to obtain medical records.
+Policies redact the information returned by the FHIR server.
+
+
 > Do once:
 helm repo add elsheir https://elsalant.github.io/heir-FHIR/
 
