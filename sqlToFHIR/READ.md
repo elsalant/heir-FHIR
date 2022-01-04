@@ -18,11 +18,11 @@ kubectl apply -f \<ROOT>/sqlToFHIR/sqlToFHIRmodule.yaml
 8. Apply the application
 kubectl apply -f \<ROOT>/sqlToFHIR/sqlToFHIRapplication
 9. Test
-- a) Load database 
-kubectl port-forward svc/ibmfhir -n fybrik-system 9443:9443
+- a) Load database  
+kubectl port-forward svc/ibmfhir -n fybrik-system 9443:9443  
 \<ROOT>/sqlToFHIR/createPatient.sh
-- b) Port-forward pod in fybrik-blueprints
- kubectl get pods -n fybrik-blueprints
+- b) Port-forward pod in fybrik-blueprints  
+ kubectl get pods -n fybrik-blueprints  
 eg: kubectl port-forward pod/\<POD ID> -n fybrik-blueprints 5559:5559
 - c) curl http://localhost:5559/Patient
 
@@ -43,7 +43,7 @@ Package the chart:
 helm package \<ROOT>/charts/sqlToFHIR
 
 3. Update the image.yaml file  
-cd <ROOT>
+cd \<ROOT>  
 helm repo index --url https://elsalant.github.io/heir-FHIR/ --merge index.yaml .
 4. Push the changed files (including the index file) to github repo
 - git status
