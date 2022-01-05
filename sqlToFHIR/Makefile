@@ -1,13 +1,13 @@
 export DOCKER_USERNAME ?= salant
 export DOCKER_HOSTNAME ?= github.ibm.com
-export DOCKER_PASSWORD ?= d20e958fd8c1a3ce7443c50a27e5bb6a2ac082ae
+export DOCKER_PASSWORD ?= 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
 # FOR github.com - i.e. docker khostname ghcr.io
 # export DOCKER_PASSWORD ?= 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
 export DOCKER_NAMESPACE ?= salant
-export DOCKER_TAGNAME ?= v1
+export DOCKER_TAGNAME ?= v2
 
 export HELM_TAGNAME ?= 0.0.1
-export HELM_TOKEN ?= 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
+export HELM_TOKEN ?= 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
 export HELM_USERNAME ?= elsalant
 export HELM_HOSTNAME ?= ghcr.io
 
@@ -32,7 +32,7 @@ docker-build:
 
 .PHONY: docker-push
 docker-push:
-	docker login
+	docker login --username ${DOCKER_USERNAME} --password ${DOCKER_PASSWORD} ghcr.io/elsalant
 	docker push ${APP_IMG}
 
 .PHONY: docker-rmi
