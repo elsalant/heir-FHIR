@@ -54,3 +54,5 @@ helm repo index --url https://elsalant.github.io/heir-FHIR/ --merge index.yaml .
 - git add <....>
 - git commit -m 'updated files'
 - git push 
+
+MAKE SURE the sql-to-file:XXX.tgz file is pushed!
