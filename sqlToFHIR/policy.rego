@@ -12,3 +12,10 @@ rule[{"action": {"name":"Statistics", "columns": column_names}, "policy": descri
   column_names := [input.resource.columns[i].name | input.resource.columns[i].tags.stats]
   count(column_names) > 0
 }
+
+rule[{"action": {"name":"BlockResource", "columns": column_names}, "policy": description}] {
+  description := "Blocks whole resource"
+  input.resource.tags.healthcare
+  column_names := [input.resource.columns[i].name | input.resource.columns[i].tags.blocked]
+  count(column_names) > 0
+}
