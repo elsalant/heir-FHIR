@@ -17,6 +17,7 @@ spec:
       actions:
         - name: RedactColumn
         - name: Statistics
+        - name: BlockResource
       api:
         endpoint:
           port: 5559

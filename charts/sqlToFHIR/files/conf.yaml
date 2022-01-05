@@ -30,9 +30,9 @@ data:
            - {{ . }}
            {{- end }}
      {{- end -}}
-     {{- if eq .name "blockColumns" -}}
+     {{- if eq .name "BlockResource" -}}
        {{- $blockColumns = .Statistics.columns }}
-       - action: "blockColumns"
+       - action: "BlockColumns"
          description: "Block all data for resource: {{ $blockColumns }}"
          columns:
            {{- range $blockColumns}}
