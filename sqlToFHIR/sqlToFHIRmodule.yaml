@@ -29,7 +29,7 @@ spec:
             protocol: s3
             dataformat: csv
   chart:
-    name: ghcr.io/elsalant/sql-to-fhir-chart:0.0.2
+    name: ghcr.io/elsalant/sql-to-fhir-chart:0.0.4
   statusIndicators:
     - kind: StreamTransfer
       successCondition: status.status == SUCCEEDED

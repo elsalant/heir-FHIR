@@ -3,7 +3,7 @@ entries:
   ibmfhir_orig:
   - apiVersion: v2
     appVersion: 1.1.0
-    created: "2022-01-05T13:38:22.393208404+02:00"
+    created: "2022-01-05T14:32:16.046599935+02:00"
     description: A Helm chart for Kubernetes
     digest: afe321542d76e8e2adf9a5280f7fffe6ec4a40ceb6b4292cba922501bc504592
     name: ibmfhir_orig
@@ -13,7 +13,7 @@ entries:
     version: 0.2.0
   - apiVersion: v2
     appVersion: 1.1.0
-    created: "2022-01-05T13:38:22.39273988+02:00"
+    created: "2022-01-05T14:32:16.046174155+02:00"
     description: A Helm chart for Kubernetes
     digest: 7e8793983cb7a6f9be89a4a2c276db2e764d6c4b93ae027ce016035836fc945d
     name: ibmfhir_orig
@@ -24,7 +24,7 @@ entries:
   ibmfhir_server:
   - apiVersion: v2
     appVersion: 1.1.0
-    created: "2022-01-05T13:38:22.394819348+02:00"
+    created: "2022-01-05T14:32:16.048938384+02:00"
     description: A Helm chart for Kubernetes
     digest: c549b39e975ddae3d9eb609e9256b5be10de5c03cf2fbc03becace420f4a9e09
     name: ibmfhir_server
@@ -32,10 +32,21 @@ entries:
     urls:
     - https://elsalant.github.io/heir-FHIR/helm/ibmfhir_server-0.1.0.tgz
     version: 0.1.0
+  sql-to-fhir-chart:
+  - apiVersion: v2
+    appVersion: "1.0"
+    created: "2022-01-05T14:32:16.046967837+02:00"
+    description: A Helm chart for installing a module for Fybrik in Kubernetes
+    digest: 16e2d3fe0b6b4489d15cd296dbac560a6cb812d3b155abfbb10d28dce47649f3
+    name: sql-to-fhir-chart
+    type: application
+    urls:
+    - https://elsalant.github.io/heir-FHIR/charts/sql-to-fhir-chart-0.0.4.tgz
+    version: 0.0.4
   sqltofhir-chart:
   - apiVersion: v2
     appVersion: "1.0"
-    created: "2022-01-05T13:38:22.394387121+02:00"
+    created: "2022-01-05T14:32:16.048399699+02:00"
     description: A Helm chart for installing a module for Fybrik in Kubernetes
     digest: f768b4af8ca32c971b9a049a0ac0cc02baa4231879c0bf42b24199106cfe4481
     name: sqltofhir-chart
@@ -45,7 +56,7 @@ entries:
     version: 0.0.4
   - apiVersion: v2
     appVersion: "1.0"
-    created: "2022-01-05T13:38:22.394016976+02:00"
+    created: "2022-01-05T14:32:16.047955318+02:00"
     description: A Helm chart for installing a module for Fybrik in Kubernetes
     digest: 9afd440395ee9b4321aaf09ee5d91241c5b08b1ffb722d353e4c406fb05223c1
     name: sqltofhir-chart
@@ -55,7 +66,7 @@ entries:
     version: 0.0.3
   - apiVersion: v2
     appVersion: "1.0"
-    created: "2022-01-05T13:38:22.393613831+02:00"
+    created: "2022-01-05T14:32:16.047511553+02:00"
     description: A Helm chart for installing a module for Fybrik in Kubernetes
     digest: 4b205b94b5d7de8d0e65073789beabd9e7451e7a9d3606647293b494f88cbe3b
     name: sqltofhir-chart
@@ -63,4 +74,4 @@ entries:
     urls:
     - https://elsalant.github.io/heir-FHIR/charts/sqltofhir-chart-0.0.2.tgz
     version: 0.0.2
-generated: "2022-01-05T13:38:22.39220512+02:00"
+generated: "2022-01-05T14:32:16.045625963+02:00"
