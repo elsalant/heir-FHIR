@@ -8,8 +8,9 @@ data:
   {{- if .transformations }}
    transformations:
    {{- $redactColumns := list -}}
-   {{- $statisticsCoumn := list -}}
+   {{- $statisticsColumn := list -}}
    {{- $removeColumns := list -}}
+   {{- $blockColumns := list -}}
    {{- range .transformations }}
      {{- if eq .name "RemoveColumn" -}}
        {{- $removeColumns = .RemoveColumn.columns }}
@@ -26,6 +27,15 @@ data:
          description: "Perform statistical analysis on: {{ $statisticsColumn }}"
          columns:
            {{- range $statisticsColumn}}
+           - {{ . }}
+           {{- end }}
+     {{- end -}}
+     {{- if eq .name "blockColumns" -}}
+       {{- $blockColumns = .Statistics.columns }}
+       - action: "blockColumns"
+         description: "Block all data for resource: {{ $blockColumns }}"
+         columns:
+           {{- range $blockColumns}}
            - {{ . }}
            {{- end }}
      {{- end -}}
