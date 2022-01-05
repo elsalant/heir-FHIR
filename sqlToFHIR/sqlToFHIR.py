@@ -121,6 +121,8 @@ def apply_policy(jsonList, policies):
     else:
         policy = policies
     print('policy = ', str(policy))
+    if policy['transformations'][0] == None:
+        return (str(df.to_json()))
     action = policy['transformations'][0]['action']
     if action == '':
         return (str(df.to_json()))
