@@ -45,6 +45,9 @@ helm registry login -u elsalant -p \<PASSWORD> ghcr.io
 
 Package the chart:  
 helm package \<ROOT>/charts/sqlToFHIR
+Save then push the chart:
+helm chart save sql-to-fhir-chart-0.0.4.tgz ghcr.io/elsalant/sql-to-fhir-chart:0.0.4
+helm chart push ghcr.io/elsalant/sql-to-fhir-chart:0.0.4
 
 3. Update the image.yaml file  
 cd \<ROOT>  
