@@ -19,7 +19,7 @@ ACCESS_DENIED_CODE = 403
 ERROR_CODE = 406
 VALID_RETURN = 200
 
-TEST = False
+TEST = True
 
 if TEST:
     DEFAULT_FHIR_HOST = 'https://localhost:9443/fhir-server/api/v4/'
@@ -145,6 +145,11 @@ def apply_policy(jsonList, policies):
         redactedData.append(df.to_json())
         return(str(redactedData))
 
+    if action == 'BlockResource':
+        print("BlockResource called!")
+        if policy['transformations'][0]['columns'][0] == df['resourceType'][0]:
+            return('{"result": "Resource blocked by policy!!"}')
+
     if action == 'Statistics':
         for col in policy['transformations'][0]['columns']:
             print('col = ', col)
@@ -236,7 +241,8 @@ def main():
 
         print('cmReturn = ', cmReturn)
     if TEST:
-        cmDict = {'dict_item': [('WP2_TOPIC', 'fhir-wp2'), ('HEIR_KAFKA_HOST', 'kafka.fybrik-system:9092'),('transformations', [{'action': 'RedactColumn', 'description': 'redacting columns: [id valueQuantity.value]', 'columns': ['id', 'valueQuantity.value'], 'options': {'redactValue': 'XXXXX'}}, {'action': 'Statistics', 'description': 'statistics on columns: [valueQuantity.value]', 'columns': ['valueQuantity.value']}])]}
+        cmDict = {'dict_item': [('transformations', [{'action': 'BlockResource', 'description': 'redacting columns: Patient', 'columns': ['Patient'], 'options': {'redactValue': 'XXXXX'}}])]}
+ #      cmDict = {'dict_item': [('WP2_TOPIC', 'fhir-wp2'), ('HEIR_KAFKA_HOST', 'kafka.fybrik-system:9092'),('transformations', [{'action': 'RedactColumn', 'description': 'redacting columns: [id valueQuantity.value]', 'columns': ['id', 'valueQuantity.value'], 'options': {'redactValue': 'XXXXX'}}, {'action': 'Statistics', 'description': 'statistics on columns: [valueQuantity.value]', 'columns': ['valueQuantity.value']}])]}
   #      cmDict = {'dict_items': [('WP2_TOPIC', 'fhir-wp2'), ('HEIR_KAFKA_HOST', 'kafka.fybrik-system:9092'), ('VAULT_SECRET_PATH', None), ('SECRET_NSPACE', 'fybrik-system'), ('SECRET_FNAME', 'credentials-els'), ('S3_URL', 'http://s3.eu.cloud-object-storage.appdomain.cloud'), ('transformations', [{'action': 'RedactColumn', 'description': 'redacting columns: [id valueQuantity.value]', 'columns': ['id', 'valueQuantity.value'], 'options': {'redactValue': 'XXXXX'}}, {'action': 'Statistics', 'description': 'statistics on columns: [valueQuantity.value]', 'columns': ['valueQuantity.value']}])]}
     else:
         cmDict = cmReturn.get('data', [])

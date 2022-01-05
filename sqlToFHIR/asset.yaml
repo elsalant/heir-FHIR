@@ -22,3 +22,6 @@ spec:
       id:
         tags:
         - PII
+      Patient:
+        tags:
+          - blocked
