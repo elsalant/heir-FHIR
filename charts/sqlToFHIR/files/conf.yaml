@@ -32,7 +32,7 @@ data:
      {{- end -}}
      {{- if eq .name "BlockResource" -}}
        {{- $blockColumns = .BlockResource.columns }}
-       - action: "BlockColumns"
+       - action: "BlockResource"
          description: "Block all data for resource: {{ $blockColumns }}"
          columns:
            {{- range $blockColumns}}
