@@ -19,9 +19,6 @@ spec:
     tags:
     - healthcare
     componentsMetadata:
-      id:
-        tags:
-        - PII
-      Patient:
+      Observation:
         tags:
           - blocked
