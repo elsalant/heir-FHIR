@@ -45,18 +45,7 @@ export HELM_EXPERIMENTAL_OCI=1
 helm registry login -u elsalant -p \<PASSWORD> ghcr.io
 
 Package the chart:  
-helm package \<ROOT>/charts/sqlToFHIR
-Save then push the chart:
-helm chart save sql-to-fhir-chart-0.0.4.tgz ghcr.io/elsalant/sql-to-fhir-chart:0.0.4
-helm chart push ghcr.io/elsalant/sql-to-fhir-chart:0.0.4
-
-3. Update the image.yaml file  
-cd \<ROOT>  
-helm repo index --url https://elsalant.github.io/heir-FHIR/ --merge index.yaml .
-4. Push the changed files (including the index file) to github repo
-- git status
-- git add <....>
-- git commit -m 'updated files'
-- git push 
-
-MAKE SURE the sql-to-file:XXX.tgz file is pushed!
+helm package \<ROOT>/charts/sqlToFHIR  
+Save then push the chart:  
+helm chart save sql-to-fhir-chart-0.0.4.tgz ghcr.io/elsalant/sql-to-fhir-chart:0.0.4  
+helm chart push ghcr.io/elsalant/sql-to-fhir-chart:0.0.4  
