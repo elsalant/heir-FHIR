@@ -120,14 +120,15 @@ def apply_policy(jsonList, policies):
         policy = dict(policies['dict_item'])
     else:
         policy = policies
-    print('-> policy = ', str(policy))
+    print('policy = ', str(policy))
     if policy['transformations'][0] == None:
+        print('No transformations found!')
         return (str(df.to_json()))
     action = policy['transformations'][0]['action']
     if action == '':
         return (str(df.to_json()))
+    print('Action = ' + action)
     if action == 'DeleteColumn':
-        print('DeleteColumn called!')
         try:
             for col in policy['transformations'][0]['columns']:
                 df.drop(col, inplace=True, axis=1)
@@ -137,7 +138,6 @@ def apply_policy(jsonList, policies):
         return(str(redactedData))
 
     if action == 'RedactColumn':
-        print('RedactColumn called!')
         replacementStr = policy['transformations'][0]['options']['redactValue']
         for col in policy['transformations'][0]['columns']:
             try:
@@ -148,9 +148,13 @@ def apply_policy(jsonList, policies):
         return(str(redactedData))
 
     if action == 'BlockResource':
-        print("BlockResource called!")
-        if policy['transformations'][0]['columns'][0] == df['resourceType'][0]:
+    #    if policy['transformations'][0]['columns'][0] == df['resourceType'][0]:
+        if df['resourceType'][0] in policy['transformations'][0]['columns']:
             return('{"result": "Resource blocked by policy!!"}')
+        else:
+            print('Error in BlockResourced. resourceType =  ' + df['resourceType'][0] + \
+                  ' policy[\'transformations\'][0][\'columns\'][0] = ' + df['resourceType'][0] in policy['transformations'][0]['columns'][0])
+            return((str(df.to_json())))
 
     if action == 'Statistics':
         for col in policy['transformations'][0]['columns']:
@@ -188,6 +192,7 @@ def apply_policy(jsonList, policies):
             'CGM_STD': std
         }
         return(d)
+    return('{"Unknown transformation": "'+ action + '"}')
 
 def timeWindow_filter(df):
     print("keys = ", df.keys())
