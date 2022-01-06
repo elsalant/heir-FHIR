@@ -19,7 +19,7 @@ ACCESS_DENIED_CODE = 403
 ERROR_CODE = 406
 VALID_RETURN = 200
 
-TEST = True
+TEST = False
 
 if TEST:
     DEFAULT_FHIR_HOST = 'https://localhost:9443/fhir-server/api/v4/'
@@ -120,7 +120,7 @@ def apply_policy(jsonList, policies):
         policy = dict(policies['dict_item'])
     else:
         policy = policies
-    print('policy = ', str(policy))
+    print('-> policy = ', str(policy))
     if policy['transformations'][0] == None:
         return (str(df.to_json()))
     action = policy['transformations'][0]['action']
