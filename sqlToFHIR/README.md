@@ -30,6 +30,7 @@ kubectl port-forward svc/ibmfhir -n fybrik-system 9443:9443
 eg: kubectl port-forward pod/\<POD ID> -n fybrik-blueprints 5559:5559
 - c) curl http://localhost:5559/Patient
 
+To test blocking a resource, change "Observation" in asset.yaml to "Patient" and reinstall yaml
 DEVELOPMENT
 
 1. To build Docker image:
