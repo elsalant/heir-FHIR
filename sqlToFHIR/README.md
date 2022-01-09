@@ -28,6 +28,8 @@ kubectl port-forward svc/ibmfhir -n fybrik-system 9443:9443
  kubectl get pods -n fybrik-blueprints  
 eg: kubectl port-forward pod/\<POD ID> -n fybrik-blueprints 5559:5559
 - c) curl http://localhost:5559/Patient
+- To load Observations:  
+  docker run --network host ghcr.io/elsalant/observation-generator:v1
 
 To test blocking a resource, change "Observation" in asset.yaml to "Patient" and reinstall yaml. 
 
