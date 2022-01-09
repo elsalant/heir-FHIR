@@ -1,5 +1,4 @@
-This is an example of Fybrik read module that uses REST protocol to connect to a FHIR server to obtain medical records.
-Policies redact the information returned by the FHIR server.
+### This is an example of Fybrik read module that uses REST protocol to connect to a FHIR server to obtain medical records.  Policies redact the information returned by the FHIR server or can even restrict access to a given resource type.
 
 
 > Do once:
@@ -30,8 +29,9 @@ kubectl port-forward svc/ibmfhir -n fybrik-system 9443:9443
 eg: kubectl port-forward pod/\<POD ID> -n fybrik-blueprints 5559:5559
 - c) curl http://localhost:5559/Patient
 
-To test blocking a resource, change "Observation" in asset.yaml to "Patient" and reinstall yaml
-DEVELOPMENT
+To test blocking a resource, change "Observation" in asset.yaml to "Patient" and reinstall yaml. 
+
+#### DEVELOPMENT
 
 1. To build Docker image:
 cd /Users/eliot/projects/HEIR/code/sqlToFHIR
@@ -52,3 +52,8 @@ helm chart push ghcr.io/elsalant/sql-to-fhir-chart:0.0.4
 
 Update the index:  
 helm repo index --url https://ghcr.io/elsalant/ --merge index.yaml .
+
+##### Development hints
+1. files/conf.yaml controls the format of the policy evaluation.  This will be written into a file mounted inside the pod running in the fybrik-blueprints namespace.
+2. templates/deployment.yaml defines the mount point (e.g. /etc/conf/conf.yaml) for this file.
+3. Redaction values defined in values.yaml will be ignored.  This information will be supplied by the manager and connectors.
