@@ -45,6 +45,6 @@ You can confirm that the application is running by entering:
 kubectl get pods -n fybrik-blueprints
 
 To load the FHIR server:  (do this in a new window)  
-   kubectl port-forward svc/ibmfhir -n fybrik-system 9443:9443
+   kubectl port-forward svc/ibmfhir -n fybrik-system 9443:9443  
 12. The emulator to generate Observation records can be run by:  
    docker run --network host ghcr.io/elsalant/observation-generator:v1    
