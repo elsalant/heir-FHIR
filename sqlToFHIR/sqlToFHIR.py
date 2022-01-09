@@ -94,14 +94,16 @@ def read_from_fhir(queryString):
 
     returnedRecord = handleQuery(queryURL, queryString, auth, params, 'GET')
     if returnedRecord == None:
-        return("No results returned!")
+        return(['{"ERROR" : "returnedRecord empty!"}'], ERROR_CODE)
     # Strip the bundle information out and convert to data frame
     recordList = []
     try:
         for record in returnedRecord['entry']:
+            print("bundle detected")
             recordList.append(json.dumps(record['resource']))
     except:
         print("no information returned!")
+        return(['{"ERROR" : "No information returned!"}'], ERROR_CODE)
 #    jsonList = [ast.literal_eval(x) for x in recordList]
     jsonList = [json.loads(x) for x in recordList]
     return (jsonList, VALID_RETURN)
@@ -128,9 +130,17 @@ def apply_policy(jsonList, policies):
     if action == '':
         return (str(df.to_json()))
     print('Action = ' + action)
+
+# Allow specifying a particular attribute for a given resource by specifying the in policy file the
+# the column name as <resource>.<column_name>
     if action == 'DeleteColumn':
         try:
             for col in policy['transformations'][0]['columns']:
+                if '.' in col:
+                    (resource, col) = col.split('.')
+                    print("resource, attribute specified: " + resource + ", " + col)
+                    if (df['resourceType'][0]) != resource:
+                        continue
                 df.drop(col, inplace=True, axis=1)
         except:
             print("No such column " + col + " to delete")
@@ -140,6 +150,9 @@ def apply_policy(jsonList, policies):
     if action == 'RedactColumn':
         replacementStr = policy['transformations'][0]['options']['redactValue']
         for col in policy['transformations'][0]['columns']:
+            if '.' in col:
+                (resource, col) = col.split('.')
+                print("resource, attribute specified: " + resource + ", " + col)
             try:
                 df[col].replace(r'.+', replacementStr, regex=True, inplace=True)
             except:
