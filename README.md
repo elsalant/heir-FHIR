@@ -6,7 +6,7 @@ retrieve the 2 week snapshot data based on the id in the received Observation.
 
 Do once:
 > Clone these files:  
-git clone https://github.com/elsalant/heir-FHIR.git
+git clone https://github.com/elsalant/heir-FHIR.git  
 > Install kind if required (https://kind.sigs.k8s.io/docs/user/quick-start/) and create a new kind cluster:  
 kind create cluster --name mvp 
 > Add to the list of helm repos  
