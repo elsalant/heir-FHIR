@@ -33,11 +33,11 @@ To test blocking a resource, change "Observation" in asset.yaml to "Patient" and
 
 #### DEVELOPMENT
 
-1. To build Docker image:
-cd /Users/eliot/projects/HEIR/code/sqlToFHIR
-make docker-build
+1. To build Docker image:  
+cd /Users/eliot/projects/HEIR/code/sqlToFHIR  
+make docker-build  
 
-Push the image to Docker package repo
+Push the image to Docker package repo  
 make docker-push
 
 2. Push the Helm chart to the repo
@@ -57,3 +57,6 @@ helm repo index --url https://ghcr.io/elsalant/ --merge index.yaml .
 1. files/conf.yaml controls the format of the policy evaluation.  This will be written into a file mounted inside the pod running in the fybrik-blueprints namespace.
 2. templates/deployment.yaml defines the mount point (e.g. /etc/conf/conf.yaml) for this file.
 3. Redaction values defined in values.yaml will be ignored.  This information will be supplied by the manager and connectors.
+4. The FHIR server can be queried directly by:
+ - kubectl port-forward svc/ibmfhir 9443:9443 -n fybrik-system  
+ - curl -k -u 'fhiruser:change-password' 'https://127.0.0.1:9443/fhir-server/api/v4/Patient'
