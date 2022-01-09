@@ -49,3 +49,6 @@ helm package \<ROOT>/charts/sqlToFHIR
 Save then push the chart:  
 helm chart save sql-to-fhir-chart-0.0.4.tgz ghcr.io/elsalant/sql-to-fhir-chart:0.0.4  
 helm chart push ghcr.io/elsalant/sql-to-fhir-chart:0.0.4  
+
+Update the index:  
+helm repo index --url https://ghcr.io/elsalant/ --merge index.yaml .
