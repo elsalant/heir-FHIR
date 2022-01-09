@@ -31,7 +31,8 @@ eg: kubectl port-forward pod/\<POD ID> -n fybrik-blueprints 5559:5559
 - To load Observations:  
   docker run --network host ghcr.io/elsalant/observation-generator:v1
 
-To test blocking a resource, change "Observation" in asset.yaml to "Patient" and reinstall yaml. 
+To test blocking a resource, change "Observation" in asset.yaml to "Patient" and reinstall yaml.  
+To test redaction: pick a field in the resource (e.g. "id" and set the tag in the asset file to "PII"
 
 #### DEVELOPMENT
 
