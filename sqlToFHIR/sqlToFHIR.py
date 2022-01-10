@@ -94,14 +94,16 @@ def read_from_fhir(queryString):
 
     returnedRecord = handleQuery(queryURL, queryString, auth, params, 'GET')
     if returnedRecord == None:
-        return("No results returned!")
+        return(['{"ERROR" : "returnedRecord empty!"}'], ERROR_CODE)
     # Strip the bundle information out and convert to data frame
     recordList = []
     try:
         for record in returnedRecord['entry']:
+            print("bundle detected")
             recordList.append(json.dumps(record['resource']))
     except:
         print("no information returned!")
+        return(['{"ERROR" : "No information returned!"}'], ERROR_CODE)
 #    jsonList = [ast.literal_eval(x) for x in recordList]
     jsonList = [json.loads(x) for x in recordList]
     return (jsonList, VALID_RETURN)
@@ -128,23 +130,39 @@ def apply_policy(jsonList, policies):
     if action == '':
         return (str(df.to_json()))
     print('Action = ' + action)
+
+# Allow specifying a particular attribute for a given resource by specifying the in policy file the
+# the column name as <resource>.<column_name>
+    dfToRows = ''
     if action == 'DeleteColumn':
         try:
             for col in policy['transformations'][0]['columns']:
+                if '.' in col:
+                    (resource, col) = col.split('.')
+                    print("resource, attribute specified: " + resource + ", " + col)
+                    if (df['resourceType'][0]) != resource:
+                        continue
                 df.drop(col, inplace=True, axis=1)
         except:
             print("No such column " + col + " to delete")
-        redactedData.append(df.to_json())
+        for i in df.index:
+            dfToRows = dfToRows + df.loc[i].to_json()
+        redactedData.append(dfToRows)
         return(str(redactedData))
 
     if action == 'RedactColumn':
         replacementStr = policy['transformations'][0]['options']['redactValue']
         for col in policy['transformations'][0]['columns']:
+            if '.' in col:
+                (resource, col) = col.split('.')
+                print("resource, attribute specified: " + resource + ", " + col)
             try:
                 df[col].replace(r'.+', replacementStr, regex=True, inplace=True)
             except:
                 print("No such column " + col + " to redact")
-        redactedData.append(df.to_json())
+        for i in df.index:
+            dfToRows = dfToRows + df.loc[i].to_json()
+        redactedData.append(dfToRows)
         return(str(redactedData))
 
     if action == 'BlockResource':
@@ -248,7 +266,7 @@ def main():
 
         print('cmReturn = ', cmReturn)
     if TEST:
-        cmDict = {'dict_item': [('transformations', [{'action': 'BlockResource', 'description': 'redacting columns: Patient', 'columns': ['Patient'], 'options': {'redactValue': 'XXXXX'}}])]}
+        cmDict = {'dict_item': [('transformations', [{'action': 'RedactColumn', 'description': 'redacting columns: Patient', 'columns': ['Patient'], 'options': {'redactValue': 'XXXXX'}}])]}
  #      cmDict = {'dict_item': [('WP2_TOPIC', 'fhir-wp2'), ('HEIR_KAFKA_HOST', 'kafka.fybrik-system:9092'),('transformations', [{'action': 'RedactColumn', 'description': 'redacting columns: [id valueQuantity.value]', 'columns': ['id', 'valueQuantity.value'], 'options': {'redactValue': 'XXXXX'}}, {'action': 'Statistics', 'description': 'statistics on columns: [valueQuantity.value]', 'columns': ['valueQuantity.value']}])]}
   #      cmDict = {'dict_items': [('WP2_TOPIC', 'fhir-wp2'), ('HEIR_KAFKA_HOST', 'kafka.fybrik-system:9092'), ('VAULT_SECRET_PATH', None), ('SECRET_NSPACE', 'fybrik-system'), ('SECRET_FNAME', 'credentials-els'), ('S3_URL', 'http://s3.eu.cloud-object-storage.appdomain.cloud'), ('transformations', [{'action': 'RedactColumn', 'description': 'redacting columns: [id valueQuantity.value]', 'columns': ['id', 'valueQuantity.value'], 'options': {'redactValue': 'XXXXX'}}, {'action': 'Statistics', 'description': 'statistics on columns: [valueQuantity.value]', 'columns': ['valueQuantity.value']}])]}
     else:
