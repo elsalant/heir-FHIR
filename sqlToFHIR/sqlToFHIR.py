@@ -19,7 +19,7 @@ ACCESS_DENIED_CODE = 403
 ERROR_CODE = 406
 VALID_RETURN = 200
 
-TEST = False
+TEST = True
 
 if TEST:
     DEFAULT_FHIR_HOST = 'https://localhost:9443/fhir-server/api/v4/'
@@ -133,6 +133,7 @@ def apply_policy(jsonList, policies):
 
 # Allow specifying a particular attribute for a given resource by specifying the in policy file the
 # the column name as <resource>.<column_name>
+    dfToRows = ''
     if action == 'DeleteColumn':
         try:
             for col in policy['transformations'][0]['columns']:
@@ -144,8 +145,10 @@ def apply_policy(jsonList, policies):
                 df.drop(col, inplace=True, axis=1)
         except:
             print("No such column " + col + " to delete")
-        redactedData.append(df.to_json())
-        return(str(redactedData))
+        for i in df.index:
+            dfToRows = dfToRows + df.loc[i].to_json()
+        redactedData.append(dfToRows)
+        return(redactedData)
 
     if action == 'RedactColumn':
         replacementStr = policy['transformations'][0]['options']['redactValue']
@@ -157,8 +160,10 @@ def apply_policy(jsonList, policies):
                 df[col].replace(r'.+', replacementStr, regex=True, inplace=True)
             except:
                 print("No such column " + col + " to redact")
-        redactedData.append(df.to_json())
-        return(str(redactedData))
+        for i in df.index:
+            dfToRows = dfToRows + df.loc[i].to_json()
+        redactedData.append(dfToRows)
+        return(redactedData)
 
     if action == 'BlockResource':
     #    if policy['transformations'][0]['columns'][0] == df['resourceType'][0]:
@@ -261,7 +266,7 @@ def main():
 
         print('cmReturn = ', cmReturn)
     if TEST:
-        cmDict = {'dict_item': [('transformations', [{'action': 'BlockResource', 'description': 'redacting columns: Patient', 'columns': ['Patient'], 'options': {'redactValue': 'XXXXX'}}])]}
+        cmDict = {'dict_item': [('transformations', [{'action': 'RedactColumn', 'description': 'redacting columns: Patient', 'columns': ['Patient'], 'options': {'redactValue': 'XXXXX'}}])]}
  #      cmDict = {'dict_item': [('WP2_TOPIC', 'fhir-wp2'), ('HEIR_KAFKA_HOST', 'kafka.fybrik-system:9092'),('transformations', [{'action': 'RedactColumn', 'description': 'redacting columns: [id valueQuantity.value]', 'columns': ['id', 'valueQuantity.value'], 'options': {'redactValue': 'XXXXX'}}, {'action': 'Statistics', 'description': 'statistics on columns: [valueQuantity.value]', 'columns': ['valueQuantity.value']}])]}
   #      cmDict = {'dict_items': [('WP2_TOPIC', 'fhir-wp2'), ('HEIR_KAFKA_HOST', 'kafka.fybrik-system:9092'), ('VAULT_SECRET_PATH', None), ('SECRET_NSPACE', 'fybrik-system'), ('SECRET_FNAME', 'credentials-els'), ('S3_URL', 'http://s3.eu.cloud-object-storage.appdomain.cloud'), ('transformations', [{'action': 'RedactColumn', 'description': 'redacting columns: [id valueQuantity.value]', 'columns': ['id', 'valueQuantity.value'], 'options': {'redactValue': 'XXXXX'}}, {'action': 'Statistics', 'description': 'statistics on columns: [valueQuantity.value]', 'columns': ['valueQuantity.value']}])]}
     else:
