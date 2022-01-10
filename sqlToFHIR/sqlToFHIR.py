@@ -148,7 +148,7 @@ def apply_policy(jsonList, policies):
         for i in df.index:
             dfToRows = dfToRows + df.loc[i].to_json()
         redactedData.append(dfToRows)
-        return(redactedData)
+        return(str(redactedData))
 
     if action == 'RedactColumn':
         replacementStr = policy['transformations'][0]['options']['redactValue']
@@ -163,7 +163,7 @@ def apply_policy(jsonList, policies):
         for i in df.index:
             dfToRows = dfToRows + df.loc[i].to_json()
         redactedData.append(dfToRows)
-        return(redactedData)
+        return(str(redactedData))
 
     if action == 'BlockResource':
     #    if policy['transformations'][0]['columns'][0] == df['resourceType'][0]:
