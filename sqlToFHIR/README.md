@@ -31,8 +31,14 @@ eg: kubectl port-forward pod/\<POD ID> -n fybrik-blueprints 5559:5559
 - To load Observations:  
   docker run --network host ghcr.io/elsalant/observation-generator:v1
 
-To test redaction: pick a field in the resource (e.g. "id" and set the tag in the asset file to "PII"
+#### Hints
+To test redaction: pick a field in the resource (e.g. "id") and set the tag in the asset.yaml file to "PII".
+Note that to redact a given field in a given resource, e.g. "id" in "Patient" sources, in the asset.yaml file, specify the componentsMetadata value as "Patient.id".
 
+If either the asset or policy is changed, then the Fybrik application needs to be restarted:
+kubectl delete -f <name of FybrikApplication file>  
+kubectl apply -f <name of FybrikApplication file>
+ 
 #### DEVELOPMENT
 
 1. To build Docker image:
