@@ -5,6 +5,8 @@ data:
     WP2_TOPIC: {{ .source.connection.kafka.topic_name }}
     HEIR_KAFKA_HOST: {{ .source.connection.kafka.bootstrap_servers }}  
   {{- end }}
+  SECRET_NSPACE: {{ .source.credentialLocation.namespace }}
+  SECRET_FNAME: {{ .source.credentialLocation.secret_file }}
   {{- if .transformations }}
    transformations:
    {{- $redactColumns := list -}}

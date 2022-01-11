@@ -39,8 +39,10 @@ read:
         endpoint:
         object_key:
       type: 2
-    credentialLocation: 
-    format: json
+    credentialLocation:
+      namespace:  fybrik-system
+      secret_file: fhir-credentials  
+    format: json  
 #  transformations:
 #  - name: "RemoveColumn"
 #    RemoveColumn:

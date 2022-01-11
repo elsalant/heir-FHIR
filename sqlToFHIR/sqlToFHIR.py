@@ -88,6 +88,7 @@ def getSecretKeys(secret_name, secret_namespace):  # Not needed here.  Maybe in 
     return(accessKeyID.decode('ascii'), secretAccessKey.decode('ascii'))
 
 def read_from_fhir(queryString):
+    getSecretKeys()
     queryURL = fhir_host
     params = ''
     auth = (fhir_user, fhir_pw)
@@ -107,6 +108,21 @@ def read_from_fhir(queryString):
 #    jsonList = [ast.literal_eval(x) for x in recordList]
     jsonList = [json.loads(x) for x in recordList]
     return (jsonList, VALID_RETURN)
+
+def getSecretKeys():
+    try:
+        config.load_incluster_config()  # in cluster
+    except:
+        config.load_kube_config()   # useful for testing outside of k8s
+    v1 = client.CoreV1Api()
+    secret_namespace = cmDict['SECRET_NSPACE']
+    secret_fname = cmDict['SECRET_FNAME']
+    print("secret_fname = " + secret_fname + " secret_namespace = " + secret_namespace)
+    secret = v1.read_namespaced_secret(secret_fname, secret_namespace)
+    fhiruser = base64.b64decode(secret.data['fhiruser'])
+    fhirpw = base64.b64decode(secret.data['fhirpw'])
+    print('getSecretKeys: fhiruser = ' + fhiruser + ' fhirpw = ' + fhirpw)
+    return(fhiruser.decode('ascii'), fhirpw.decode('ascii'))
 
 def apply_policy(jsonList, policies):
     df = pd.json_normalize(jsonList[0])
@@ -148,7 +164,7 @@ def apply_policy(jsonList, policies):
         for i in df.index:
             dfToRows = dfToRows + df.loc[i].to_json()
         redactedData.append(dfToRows)
-        return(str(redactedData))e 
+        return(str(redactedData))
 
     if action == 'RedactColumn':
         replacementStr = policy['transformations'][0]['options']['redactValue']
