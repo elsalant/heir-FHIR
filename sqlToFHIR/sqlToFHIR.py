@@ -148,7 +148,7 @@ def apply_policy(jsonList, policies):
         for i in df.index:
             dfToRows = dfToRows + df.loc[i].to_json()
         redactedData.append(dfToRows)
-        return(str(redactedData))
+        return(str(redactedData))e 
 
     if action == 'RedactColumn':
         replacementStr = policy['transformations'][0]['options']['redactValue']
