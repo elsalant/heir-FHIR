@@ -3,7 +3,7 @@ entries:
   ibmfhir_orig:
   - apiVersion: v2
     appVersion: 1.1.0
-    created: "2022-01-12T16:38:00.523487+02:00"
+    created: "2022-01-12T17:07:24.175243+02:00"
     description: A Helm chart to build the out-of-the-box IBM FHIR server
     digest: 479370a888b712620eb75d3d02f83ca2322d0d592371acbe93ce9c1001950f46
     name: ibmfhir_orig
@@ -13,7 +13,7 @@ entries:
     version: 0.2.0
   - apiVersion: v2
     appVersion: 1.1.0
-    created: "2022-01-12T16:38:00.523004+02:00"
+    created: "2022-01-12T17:07:24.174449+02:00"
     description: A Helm chart for Kubernetes
     digest: 7e8793983cb7a6f9be89a4a2c276db2e764d6c4b93ae027ce016035836fc945d
     name: ibmfhir_orig
@@ -24,7 +24,7 @@ entries:
   ibmfhir_server:
   - apiVersion: v2
     appVersion: 1.1.0
-    created: "2022-01-12T16:38:00.528267+02:00"
+    created: "2022-01-12T17:07:24.178661+02:00"
     description: A Helm chart for Kubernetes
     digest: c549b39e975ddae3d9eb609e9256b5be10de5c03cf2fbc03becace420f4a9e09
     name: ibmfhir_server
@@ -35,7 +35,7 @@ entries:
   sql-to-fhir-chart:
   - apiVersion: v2
     appVersion: "1.0"
-    created: "2022-01-12T16:38:00.523994+02:00"
+    created: "2022-01-12T17:07:24.176008+02:00"
     description: A Helm chart for installing a module for Fybrik in Kubernetes
     digest: 01ff708d5465fffbce0ebb73c7563f2e98d9f694aafaf4285d506d015197dfae
     name: sql-to-fhir-chart
@@ -46,7 +46,7 @@ entries:
   sqltofhir-chart:
   - apiVersion: v2
     appVersion: "1.0"
-    created: "2022-01-12T16:38:00.525014+02:00"
+    created: "2022-01-12T17:07:24.17766+02:00"
     description: A Helm chart for installing a module for Fybrik in Kubernetes
     digest: f768b4af8ca32c971b9a049a0ac0cc02baa4231879c0bf42b24199106cfe4481
     name: sqltofhir-chart
@@ -66,7 +66,7 @@ entries:
     version: 0.0.3
   - apiVersion: v2
     appVersion: "1.0"
-    created: "2022-01-12T16:38:00.524498+02:00"
+    created: "2022-01-12T17:07:24.176865+02:00"
     description: A Helm chart for installing a module for Fybrik in Kubernetes
     digest: 4b205b94b5d7de8d0e65073789beabd9e7451e7a9d3606647293b494f88cbe3b
     name: sqltofhir-chart
@@ -74,4 +74,4 @@ entries:
     urls:
     - https://ghcr.io/elsalant/charts/sqltofhir-chart-0.0.2.tgz
     version: 0.0.2
-generated: "2022-01-12T16:38:00.522281+02:00"
+generated: "2022-01-12T17:07:24.172992+02:00"

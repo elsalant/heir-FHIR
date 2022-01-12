@@ -275,7 +275,7 @@ def main():
                     print(e.args)
                     if (tries == 0):
                         try_opening = False
-                        raise ValueError('Error reading from file! ', CM_PATH)
+                        raise ValueError('Error reading from file! ' + CM_PATH)
                     time.sleep(5)
             except ValueError as e:
                 print(e.args)
