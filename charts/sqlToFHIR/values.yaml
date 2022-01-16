@@ -1,4 +1,4 @@
-# Default values for hello-world-read-module.
+# Default values for sqlToFHIR module.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
@@ -6,7 +6,7 @@ replicaCount: 1
 
 image: 
   repository:  ghcr.io/elsalant/sql-to-fhir
-  tag: v3
+  tag: v4
   pullPolicy: Always
   pullSecret: null
 
@@ -33,14 +33,14 @@ read:
 - assetID: "test1"
   source:
     connection:
-      name: s3
-      s3:
-        bucket:
-        endpoint:
+      name: fhir
+      fhir:
+        namespace: fybrik-system
+        secret_file: fhir-credentials
         object_key:
       type: 2
     credentialLocation: 
-    format: json
+    format: json  
 #  transformations:
 #  - name: "RemoveColumn"
 #    RemoveColumn:
