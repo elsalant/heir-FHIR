@@ -76,7 +76,7 @@ def handleQuery(queryGatewayURL, queryString, auth, params, method):
 
     return (returnList)
 
-def getSecretKeys(secret_name, secret_namespace):  # Not needed here.  Maybe in JWT is pushed into a secret key?
+def getSecretKeysExample(secret_name, secret_namespace):  # Not needed here.  Maybe in JWT is pushed into a secret key?
     try:
         config.load_incluster_config()  # in cluster
     except:
@@ -88,10 +88,11 @@ def getSecretKeys(secret_name, secret_namespace):  # Not needed here.  Maybe in 
     return(accessKeyID.decode('ascii'), secretAccessKey.decode('ascii'))
 
 def read_from_fhir(queryString):
-    getSecretKeys()
+    fhiruser, fhirpw = getSecretKeys()
     queryURL = fhir_host
     params = ''
-    auth = (fhir_user, fhir_pw)
+ #   auth = (fhir_user, fhir_pw)
+    auth = (fhiruser, fhirpw)
 
     returnedRecord = handleQuery(queryURL, queryString, auth, params, 'GET')
     if returnedRecord == None:
@@ -120,8 +121,8 @@ def getSecretKeys():
     print("secret_fname = " + secret_fname + " secret_namespace = " + secret_namespace)
     secret = v1.read_namespaced_secret(secret_fname, secret_namespace)
     fhiruser = base64.b64decode(secret.data['fhiruser'])
-    fhirpw = base64.b64decode(secret.data['fhirpw'])
-    print('getSecretKeys: fhiruser = ' + fhiruser + ' fhirpw = ' + fhirpw)
+    fhirpw = base64.b64decode(secret.data['fhirpasswd'])
+    print('getSecretKeys: fhiruser = ' + fhiruser.decode('ascii') + ' fhirpw = ' + fhirpw.decode('ascii'))
     return(fhiruser.decode('ascii'), fhirpw.decode('ascii'))
 
 def apply_policy(jsonList, policies):
@@ -245,9 +246,9 @@ def getAll(queryString=None):
 
     # Go out to the actual FHIR server
     print("request.method = " + request.method)
-    dfBack = read_from_fhir(queryString)
-    if (dfBack is None):
-        return ("No results returned")
+    dfBack, messageCode = read_from_fhir(queryString)
+    if (messageCode != VALID_RETURN):
+        return ("{\"Error\": \"No information returned!\"}")
 #apply_policies
     ans = apply_policy(dfBack, cmDict)
     return (ans)
@@ -262,24 +263,12 @@ def main():
     cmReturn = ''
 
     if not TEST:
-        tries = 3
-        try_opening = True
-        while try_opening:
-            try:
-                try:
-                    with open(CM_PATH, 'r') as stream:
-                        cmReturn = yaml.safe_load(stream)
-                    try_opening = False
-                except Exception as e:
-                    tries -= 1
-                    print(e.args)
-                    if (tries == 0):
-                        try_opening = False
-                        raise ValueError('Error reading from file! ' + CM_PATH)
-                    time.sleep(5)
-            except ValueError as e:
-                print(e.args)
-
+        try:
+            with open(CM_PATH, 'r') as stream:
+                cmReturn = yaml.safe_load(stream)
+        except Exception as e:
+            print(e.args)
+            raise ValueError('Error reading from file! ' + CM_PATH)
         print('cmReturn = ', cmReturn)
     if TEST:
         cmDict = {'dict_item': [('transformations', [{'action': 'RedactColumn', 'description': 'redacting columns: Patient', 'columns': ['Patient'], 'options': {'redactValue': 'XXXXX'}}])]}

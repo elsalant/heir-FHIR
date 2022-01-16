@@ -8,13 +8,13 @@ metadata:
 spec:
   selector: 
     workloadSelector:
-      matchLabels: 
-        app: fybrik-system/ibmfhir 
+      matchLabels:  
+        app: fhirnotebook 
   appInfo:
    intent: sql-fhir-demo
   data:
     - dataSetID: "sql-fhir/observation-json"
       requirements:
         interface: 
-          protocol: s3
-          dataformat: csv
+          protocol: fhir
+          dataformat: json

@@ -4,21 +4,23 @@ metadata:
   name: observation-json
   namespace: sql-fhir
 spec:
-  secretRef: 
-    name: "" 
-  assetDetails:
-    dataFormat: csv
+  details:
+    dataFormat: json
     connection:
-      type: s3
-      s3:
-        endpoint: "http://127.0.0.1:5559/"
-        bucket: notused
-        objectKey: "notused"
-  assetMetadata:
+      name: fhir
+      fhir:
+        fhirServer: ibmfhir
+        port: 9443
+        namespace: sql-fhir
+        secretRef: fhir-credentials
+  secretRef:
+      name: fhir-credentials
+  metadata:
+    name: FHIR server
     geography: UK
     tags:
-    - healthcare
-    componentsMetadata:
-      Patient:
+      healthcare: true
+    columns:
+      - name: Observation
         tags:
-          - blocked
+          blocked: true

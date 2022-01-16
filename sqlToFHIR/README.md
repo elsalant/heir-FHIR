@@ -1,12 +1,12 @@
 ### This is an example of Fybrik read module that uses REST protocol to connect to a FHIR server to obtain medical records.  Policies redact the information returned by the FHIR server or can even restrict access to a given resource type.
 
 
-> Do once:
-helm repo add elsheir https://elsalant.github.io/heir-FHIR/
+Do once:  make sure helm v3.7+ is installed
+> helm version
 
-1. Install fybrik from the instructions in: https://fybrik.io/v0.5/get-started/quickstart/
+1. Install fybrik from the instructions in: https://fybrik.io/v0.6/get-started/quickstart/
 2. Start the IBM FHIR server service (out-of-box version):
-helm install ibmfhir elsheir/ibmfhir_orig -n fybrik-system
+helm install ibmfhir oci://ghcr.io/elsalant/ibmfhir_orig --version=0.2.0 -n fybrik-system
 3. Create a namespace for the sqlfhir demo:  
 kubectl create namespace sql-fhir
 3. Pull the files:
@@ -30,6 +30,11 @@ eg: kubectl port-forward pod/\<POD ID> -n fybrik-blueprints 5559:5559
 - c) curl http://localhost:5559/Patient
 - To load Observations:  
   docker run --network host ghcr.io/elsalant/observation-generator:v1
+(NOTE: On MacOS, the "--network" switch may not work.  In that case, it might be easiest to port-forward the fhir server and 
+then run observationGenerator.py from a local Python environment
+e.g.  
+  a) kubectl port-forward svc/ibmfhir -n fybrik-system 9443:9443
+  b) python3 observationGenerator.py (under heir-FHIR/python/observationGenerator.py)
 
 #### Hints
 To test redaction: pick a field in the resource (e.g. "id") and set the tag in the asset.yaml file to "PII".
@@ -52,13 +57,12 @@ make docker-push
 export HELM_EXPERIMENTAL_OCI=1  
 helm registry login -u elsalant -p \<PASSWORD> ghcr.io
 
-Package the chart:  
-helm package \<ROOT>/charts/sqlToFHIR  
-Save then push the chart:  
-helm chart save sql-to-fhir-chart-0.0.4.tgz ghcr.io/elsalant/sql-to-fhir-chart:0.0.4  
-helm chart push ghcr.io/elsalant/sql-to-fhir-chart:0.0.4  
+Package the chart:
+helm package ibmfhir-orig -d /tmp
+Push to repo: 
+helm push /tmp/ibmfhir_orig-0.2.0.tgz oci://ghcr.io/elsalant
 
-Update the index:  
+[IS THIS NEEDED??] Update the index:  
 helm repo index --url https://ghcr.io/elsalant/ --merge index.yaml .
 
 ##### Development hints
