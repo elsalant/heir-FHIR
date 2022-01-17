@@ -13,9 +13,9 @@ kubectl create namespace sql-fhir
 git pull https://github.com/elsalant/heir-FHIR.git
 4. Install the policy:  
 \<ROOT>/sqlToFHIR/applyPolicy.sh
-5. Apply the FHIR server secrets and permissions
+5. Apply the FHIR server secrets and permissions  
 \<ROOT>/sqlToFHIR/deployPermissions.sh 
-7. kubectl edit cm cluster-metadata -n fybrik-system
+6. kubectl edit cm cluster-metadata -n fybrik-system
 and change theshire to UK
 7. kubectl apply -f \<ROOT>/sqlToFHIR/asset.yaml
 8. Apply the module
