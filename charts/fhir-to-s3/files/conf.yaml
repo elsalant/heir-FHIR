@@ -1,8 +1,8 @@
 data:
 {{- if .Values.copy -}}
- {{- if .Values.copy.source.connection.kafka }}
-   WP2_TOPIC: {{ .Values.copy.source.connection.kafka.topic_name }}
-   HEIR_KAFKA_HOST: {{ .Values.copy.source.connection.kafka.bootstrap_servers }}  
+ {{- if .Values.copy.source.connection.fhir }}
+   WP2_TOPIC: {{ .Values.copy.source.connection.fhir.kafka_topic_name }}
+   HEIR_KAFKA_HOST: {{ .Values.copy.source.connection.fhir.kafka_bootstrap_servers }}  
  {{- end }}
  {{- if .Values.copy.destination.connection.s3 }}
    VAULT_SECRET_PATH: {{ .Values.copy.destination.vault.secretPath }}
