@@ -16,7 +16,7 @@ kind create cluster --name mvp
 1. Install fybrik from the instructions in: https://fybrik.io/v0.6/get-started/quickstart/
 2. Start the Kafka server:  
    - helm install kafka bitnami/kafka -n fybrik-system
-3. Start the IBM FHIR server with the Interceptor
+3. Start the IBM FHIR server with the Interceptor  
     helm install ibmfhir oci://ghcr.io/elsalant/ibmfhir_server --version=0.2.0 -n fybrik-system  
 4. Create a namespace for mvp application use  
    kubectl create namespace mvp
