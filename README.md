@@ -13,8 +13,9 @@ kind create cluster --name mvp
 - helm repo add bitnami https://charts.bitnami.com/bitnami
 - helm repo update
 
-> Make sure helm is at least at v3.7.2  
-helm version
+> IMPORTANT!!
+>  Make sure helm is at least at v3.7.2  
+check using $helm version
 
 After installing Helm:  
 export HELM_EXPERIMENTAL_OCI=1
@@ -39,13 +40,13 @@ Move to the mvp directory
    - kubectl apply -f https://raw.githubusercontent.com/elsalant/heir-FHIR/main/mvp/asset.yaml
    - kubectl apply -f https://raw.githubusercontent.com/elsalant/heir-FHIR/main/mvp/permissions.yaml
 7. Apply the policies:   
-  mvp/applyPolicy.sh
+   ./applyPolicy.sh
 8. kubectl edit cm cluster-metadata -n fybrik-system  
    and change "theshire" ("Region" tag) to "UK"
 9. Install the module  
    kubectl apply -f https://raw.githubusercontent.com/elsalant/heir-FHIR/main/mvp/fhirToS3module.yaml -n fybrik-system
-10. Install the application (in mvp namespace)  
-   kubectl apply -f https://raw.githubusercontent.com/elsalant/heir-FHIR/main/mvp/mvpApplication.yaml -n mvp
+10. Install the application (in mvp namespace)   
+   kubectl apply -f https://raw.githubusercontent.com/elsalant/heir-FHIR/main/mvp/mvpApplication.yaml -n mvp  
 You can confirm that the application is running by entering:  
 kubectl get pods -n fybrik-blueprints
 
