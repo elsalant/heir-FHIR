@@ -13,6 +13,12 @@ kind create cluster --name mvp
 - helm repo add bitnami https://charts.bitnami.com/bitnami
 - helm repo update
 
+> Make sure helm is at least at v3.7.2  
+helm version
+
+After installing Helm:  
+export HELM_EXPERIMENTAL_OCI=1
+
 1. Install fybrik from the instructions in: https://fybrik.io/v0.6/get-started/quickstart/
 2. Start the Kafka server:  
    - helm install kafka bitnami/kafka -n fybrik-system
