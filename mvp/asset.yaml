@@ -4,20 +4,26 @@ metadata:
   name: diabetes-json
   namespace: mvp
 spec:
-  secretRef: 
-    name: diabetes-json
-  assetDetails:
+  details:
     dataFormat: json
     connection:
-      type: kafka
-      kafka: 
-        topic_name: fhir-wp2
-        bootstrap_servers: "kafka.fybrik-system:9092"
-  assetMetadata:
+      name: fhir
+      fhir:
+        fhirServer: ibmfhir
+        port: 9443
+        namespace: mvp
+        kafka_topic_name: fhir-wp2
+        kafka_bootstrap_servers: "kafka.fybrik-system:9092"
+  secretRef: 
+    name: diabetes-json
+  metadata:
+    name: FHIR server
     geography: UK
     tags:
-    - healthcare
-    componentsMetadata:
-      valueQuantity.value:
+      healthcare: true
+    columns:
+      - name: valueQuantity.value
         tags:
-        - stats
+          stats: true
+          PII: false
+          blocked: false

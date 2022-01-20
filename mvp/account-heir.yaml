@@ -4,8 +4,9 @@ metadata:
   name: account-eliot
   namespace: fybrik-system
 spec:
-  endpoint: http://s3.eu.cloud-object-storage.appdomain.cloud
+  endpoints: 
+    UK: http://s3.eu.cloud-object-storage.appdomain.cloud
   secretRef: credentials-els
-  regions:
-    - UK
+  id: UK
+ 
 

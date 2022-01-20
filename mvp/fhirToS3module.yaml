@@ -9,22 +9,36 @@ metadata:
   labels:
     name: fhirToS3
     version: 0.1.0 
+  namespace: fybrik-system
 spec:
   type:  service  
   capabilities:
-    - supportedInterfaces:
+   - capability: copy
+     actions:
+       - name: RedactColumn
+       - name: Statistics
+     api:
+       connection:
+         name: fhir
+         fhir:
+           fhirServer: ibmfhir
+           port: 9443
+           namespace: mvp
+           secretRef: diabetes-json
+           kafka_topic_name: fhir-wp2
+           kafka_bootstrap_servers: "kafka.fybrik-system:9092"
+       dataFormat: json
+     supportedInterfaces:
         - source: 
-            protocol: kafka    
+            protocol: fhir    
             dataformat: json
           sink: 
             protocol: s3
             dataformat: csv
-      actions:
-      - name: RedactColumn
-      - name: Statistics
-      capability: copy
   chart:
     name: ghcr.io/elsalant/fhir-to-s3-chart:0.0.2
+    values:
+      image.tag: v1
   statusIndicators:
     - kind: StreamTransfer
       successCondition: status.status == SUCCEEDED
