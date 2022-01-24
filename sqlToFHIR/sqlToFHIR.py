@@ -88,13 +88,13 @@ def getSecretKeysExample(secret_name, secret_namespace):  # Not needed here.  Ma
     return(accessKeyID.decode('ascii'), secretAccessKey.decode('ascii'))
 
 def read_from_fhir(queryString):
-    # fhiruser, fhirpw = getSecretKeys()
+    fhiruser, fhirpw = getSecretKeys()
     queryURL = fhir_host
     params = ''
-    auth = (fhir_user, fhir_pw)
-    #auth = (fhiruser, fhirpw)
+    #auth = (fhir_user, fhir_pw)
+    auth = (fhiruser, fhirpw)
 
-    returnedRecord = handleQuery(queryURL, queryString+"?_count=10", auth, params, 'GET')
+    returnedRecord = handleQuery(queryURL, queryString, auth, params, 'GET')
     if returnedRecord == None:
         return(['{"ERROR" : "returnedRecord empty!"}'], ERROR_CODE)
     # Strip the bundle information out and convert to data frame
