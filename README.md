@@ -13,10 +13,17 @@ kind create cluster --name mvp
 - helm repo add bitnami https://charts.bitnami.com/bitnami
 - helm repo update
 
+> IMPORTANT!!
+>  Make sure helm is at least at v3.7.2  
+check using $helm version
+
+After installing Helm:  
+export HELM_EXPERIMENTAL_OCI=1
+
 1. Install fybrik from the instructions in: https://fybrik.io/v0.6/get-started/quickstart/
 2. Start the Kafka server:  
-   - helm install kafka bitnami/kafka -n fybrik-system
-3. Start the IBM FHIR server with the Interceptor
+   - helm install kafka bitnami/kafka -n fybrik-system  
+3. Start the IBM FHIR server with the Interceptor  
     helm install ibmfhir oci://ghcr.io/elsalant/ibmfhir_server --version=0.2.0 -n fybrik-system  
 4. Create a namespace for mvp application use  
    kubectl create namespace mvp
@@ -33,15 +40,16 @@ Move to the mvp directory
    - kubectl apply -f https://raw.githubusercontent.com/elsalant/heir-FHIR/main/mvp/asset.yaml
    - kubectl apply -f https://raw.githubusercontent.com/elsalant/heir-FHIR/main/mvp/permissions.yaml
 7. Apply the policies:   
-  mvp/applyPolicy.sh
+  ./applyPolicy.sh
 8. kubectl edit cm cluster-metadata -n fybrik-system  
    and change "theshire" ("Region" tag) to "UK"
 9. Install the module  
    kubectl apply -f https://raw.githubusercontent.com/elsalant/heir-FHIR/main/mvp/fhirToS3module.yaml -n fybrik-system
 10. Install the application (in mvp namespace)  
    kubectl apply -f https://raw.githubusercontent.com/elsalant/heir-FHIR/main/mvp/mvpApplication.yaml -n mvp
-You can confirm that the application is running by entering:  
-kubectl get pods -n fybrik-blueprints
+
+   You can confirm that the application is running by entering:    
+      kubectl get pods -n fybrik-blueprints
 
 To load the FHIR server:  (do this in a new window)  
    kubectl port-forward svc/ibmfhir -n fybrik-system 9443:9443  
