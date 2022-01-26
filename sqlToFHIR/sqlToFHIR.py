@@ -184,7 +184,10 @@ def apply_policy(jsonList, policies):
                     col = colCandidate
                 print("resource, attribute specified: " + resourceCandidate + ", " + col)
             try:
-                df[col].replace(r'.+', replacementStr, regex=True, inplace=True)
+    # Replace won't replace floats or ints.  Instead, convert to column to be replaced to a string
+    # before replacing
+  #              df[col].replace(r'.+', replacementStr, regex=True, inplace=True)
+                df[col]= df[col].astype(str).str.replace(r'.+', replacementStr, regex=True)
             except:
                 print("No such column " + col + " to redact")
         for i in df.index:
@@ -284,10 +287,12 @@ def main():
             raise ValueError('Error reading from file! ' + CM_PATH)
         print('cmReturn = ', cmReturn)
     if TEST:
+        cmDict = {'dict_item': [('transformations', [{'action': 'RedactColumn', 'description': 'redact columns: [valueQuantity.value id]',
+             'columns': ['valueQuantity.value', 'id'], 'options': {'redactValue': 'XXXXX'}}])]}
    #     cmDict = {'dict_item': [('transformations', [{'action': 'RedactColumn', 'description': 'redacting columns: Patient', 'columns': ['Patient'], 'options': {'redactValue': 'XXXXX'}}])]}
-        cmDict = {'dict_item': [('transformations', [{'action': 'RedactColumn', 'description': 'redacting columns: ',
-                                                  'columns': ['subject.display', 'text.div', 'subject.reference'],
-                                                  'options': {'redactValue': 'XXXXX'}}])]}
+   #     cmDict = {'dict_item': [('transformations', [{'action': 'RedactColumn', 'description': 'redacting columns: ',
+   #                                               'columns': ['valueQuantity.value','subject.display', 'text.div', 'subject.reference'],
+   #                                               'options': {'redactValue': 'XXXXX'}}])]}
  #      cmDict = {'dict_item': [('WP2_TOPIC', 'fhir-wp2'), ('HEIR_KAFKA_HOST', 'kafka.fybrik-system:9092'),('transformations', [{'action': 'RedactColumn', 'description': 'redacting columns: [id valueQuantity.value]', 'columns': ['id', 'valueQuantity.value'], 'options': {'redactValue': 'XXXXX'}}, {'action': 'Statistics', 'description': 'statistics on columns: [valueQuantity.value]', 'columns': ['valueQuantity.value']}])]}
   #      cmDict = {'dict_items': [('WP2_TOPIC', 'fhir-wp2'), ('HEIR_KAFKA_HOST', 'kafka.fybrik-system:9092'), ('VAULT_SECRET_PATH', None), ('SECRET_NSPACE', 'fybrik-system'), ('SECRET_FNAME', 'credentials-els'), ('S3_URL', 'http://s3.eu.cloud-object-storage.appdomain.cloud'), ('transformations', [{'action': 'RedactColumn', 'description': 'redacting columns: [id valueQuantity.value]', 'columns': ['id', 'valueQuantity.value'], 'options': {'redactValue': 'XXXXX'}}, {'action': 'Statistics', 'description': 'statistics on columns: [valueQuantity.value]', 'columns': ['valueQuantity.value']}])]}
     else:
