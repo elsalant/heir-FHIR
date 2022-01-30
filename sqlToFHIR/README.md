@@ -1,5 +1,5 @@
 ### This is an example of Fybrik read module that uses REST protocol to connect to a FHIR server to obtain medical records.  Policies redact the information returned by the FHIR server or can even restrict access to a given resource type.
-
+# User authentication is enabled, as well as (optional) logging to Kafka
 
 Do once:  make sure helm v3.7+ is installed
 > helm version
@@ -7,29 +7,31 @@ Do once:  make sure helm v3.7+ is installed
 1. Install fybrik from the instructions in: https://fybrik.io/v0.6/get-started/quickstart/
 2. Start the IBM FHIR server service (out-of-box version):
 helm install ibmfhir oci://ghcr.io/elsalant/ibmfhir_orig --version=0.2.0 -n fybrik-system
-3. Create a namespace for the sqlfhir demo:  
+3. Start the Kafka server:  
+   - helm install kafka bitnami/kafka -n fybrik-system  
+4. Create a namespace for the sqlfhir demo:  
 kubectl create namespace sql-fhir
-3. Pull the files:
+5. Pull the files:
 git pull https://github.com/elsalant/heir-FHIR.git
-4. Install the policy:  
+6. Install the policy:  
 \<ROOT>/sqlToFHIR/applyPolicy.sh
-5. Apply the FHIR server secrets and permissions  
+7. Apply the FHIR server secrets and permissions  
 \<ROOT>/sqlToFHIR/deployPermissions.sh 
-6. kubectl edit cm cluster-metadata -n fybrik-system
+8. kubectl edit cm cluster-metadata -n fybrik-system
 and change theshire to UK
-7. kubectl apply -f \<ROOT>/sqlToFHIR/asset.yaml
-8. Apply the module
+9. kubectl apply -f \<ROOT>/sqlToFHIR/asset.yaml
+10. Apply the module
 kubectl apply -f \<ROOT>/sqlToFHIR/sqlToFHIRmodule.yaml  
-9. Apply the application
+11. Apply the application - note that the name (or JWT) for the requester is in the label.requestedBy field!
 kubectl apply -f \<ROOT>/sqlToFHIR/sqlToFHIRapplication
-10. Test
+12. Test
 - a) Load database  
 kubectl port-forward svc/ibmfhir -n fybrik-system 9443:9443  
 \<ROOT>/sqlToFHIR/createPatient.sh
 - b) Port-forward pod in fybrik-blueprints  
  kubectl get pods -n fybrik-blueprints  
 eg: kubectl port-forward pod/\<POD ID> -n fybrik-blueprints 5559:5559
-- c) curl http://localhost:5559/Patient
+- c) curl -X GET -H "Role: ESalant" http://localhost:5559/Observation
 - To load Observations:  
   docker run --network host ghcr.io/elsalant/observation-generator:v1
 (NOTE: On MacOS, the "--network" switch may not work.  In that case, it might be easiest to port-forward the fhir server and 
