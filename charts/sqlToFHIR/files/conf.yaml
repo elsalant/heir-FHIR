@@ -1,5 +1,8 @@
-{{- if .Values.read -}}
 data:
+{{- if .Values.labels }}
+   SUBMITTER: {{ get .Values.labels "requestedBy" | default "requester-missing" }}
+{{- end }}
+{{- if .Values.read }}
 {{- range .Values.read }}
   {{- if .source.connection.kafka }}
     WP2_TOPIC: {{ .source.connection.kafka.topic_name }}

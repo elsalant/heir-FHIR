@@ -1,11 +1,14 @@
 from flask import Flask, request
 from kubernetes import client, config
+from kafka import KafkaProducer
 import requests
 import yaml
 import urllib.parse as urlparse
 import curlify
 import urllib.parse
 import json
+import jwt
+from json import loads
 import time
 from datetime import date, datetime, timedelta, timezone
 import pandas as pd
@@ -27,6 +30,15 @@ else:
     DEFAULT_FHIR_HOST = 'https://ibmfhir.fybrik-system:9443/fhir-server/api/v4/'
 DEFAULT_FHIR_USER = 'fhiruser'
 DEFAULT_FHIR_PW = 'change-password'
+
+DEFAULT_KAFKA_TOPIC = 'fhir-wp2-logging'
+DEFAULT_KAKFA_HOST = 'kafka.fybrik-system:9092'
+
+kafka_host = os.getenv("HEIR_KAFKA_HOST") if os.getenv("HEIR_KAFKA_HOST") else DEFAULT_KAKFA_HOST
+kafka_topic = os.getenv("HEIR_KAFKA_TOPIC") if os.getenv("HEIR_KAFKA_TOPIC") else DEFAULT_KAFKA_TOPIC
+
+FIXED_SCHEMA_ROLE = 'realm_access.roles'
+FIXED_SCHEMA_ORG = 'realm_access.organization'
 
 DEFAULT_TIMEWINDOW = 3560  # days - should be 14
 HIGH_THRESHOLD_DEFAULT = 8.3
@@ -75,6 +87,31 @@ def handleQuery(queryGatewayURL, queryString, auth, params, method):
  #       print('[%s]' % ', '.join(map(str, returnList)))
 
     return (returnList)
+
+def checkRequester():
+    requester = cmDict['SUBMITTER']
+    print("SUBMITTER = " + requester)
+    return(requester)
+
+def decryptJWT(encryptedToken, flatKey):
+# String with "Bearer <token>".  Strip out "Bearer"...
+    prefix = 'Bearer'
+    assert encryptedToken.startswith(prefix), '\"Bearer\" not found in token' + encryptedToken
+    strippedToken = encryptedToken[len(prefix):].strip()
+    decodedJWT = jwt.api_jwt.decode(strippedToken, options={"verify_signature": False})
+    print('decodedJWT = ', decodedJWT)
+# We might have an nested key in JWT (dict within dict).  In that case, flatKey will express the hierarchy and so we
+# will interatively chunk through it.
+    decodedKey = None
+    while type(decodedJWT) is dict:
+        for s in flatKey.split('.'):
+            if s in decodedJWT:
+                decodedJWT = decodedJWT[s]
+                decodedKey = decodedJWT
+            else:
+                print("warning: " + s + " not found in decodedKey!")
+                return decodedKey
+    return decodedKey
 
 def getSecretKeysExample(secret_name, secret_namespace):  # Not needed here.  Maybe in JWT is pushed into a secret key?
     try:
@@ -128,6 +165,22 @@ def getSecretKeys():
     fhirpw = base64.b64decode(secret.data['fhirpasswd'])
     print('getSecretKeys: fhiruser = ' + fhiruser.decode('ascii') + ' fhirpw = ' + fhirpw.decode('ascii'))
     return(fhiruser.decode('ascii'), fhirpw.decode('ascii'))
+
+def connect_to_kafka():
+    global kafkaDisabled
+    try:
+        producer = KafkaProducer(
+            bootstrap_servers=[kafka_host],
+            request_timeout_ms=2000
+        )  # , value_serializer=lambda x:json.dumps(x).encode('utf-8'))
+    except Exception as e:
+        print("\n--->WARNING: Connection to Kafka failed.  Is the server on " + kafka_host + " running?")
+        print(e)
+        kafkaDisabled = True
+        return None
+    kafkaDisabled = False
+    print("Connection to Kafka succeeded! " + kafka_host)
+    return(producer)
 
 def apply_policy(jsonList, policies):
     df = pd.json_normalize(jsonList)
@@ -260,6 +313,40 @@ def getAll(queryString=None):
     print("queryString = " + queryString)
     print('request.url = ' + request.url)
 
+# Handle authentication in the header
+    noJWT = True
+    payloadEncrypted = request.headers.get('Authorization')
+    organization = None
+    role = None
+    if (payloadEncrypted != None):
+        noJWT = False
+        roleKey = os.getenv("SCHEMA_ROLE") if os.getenv("SCHEMA_ROLE") else FIXED_SCHEMA_ROLE
+        organizationKey = os.getenv("SCHEMA_ORG") if os.getenv("SCHEMA_ORG") else FIXED_SCHEMA_ORG
+        try:
+            role = decryptJWT(payloadEncrypted, roleKey)
+        except:
+            print("Error: no role in JWT!")
+            role = 'ERROR NO ROLE!'
+        organization = decryptJWT(payloadEncrypted, organizationKey)
+    if (noJWT):
+        role = request.headers.get('role')  # testing only
+    if (role == None):
+        role = 'ERROR NO ROLE!'
+    if (organization == None):
+        organization = 'NO ORGANIZATION'
+    print('role = ', role, " organization = ", organization)
+#   Role in JWT needs to match role of requestor from original FybrikApplication deployment
+    requester = checkRequester()
+    if (role != requester):
+        print("role = "+ role + " requester (FybrikApplication) = " + requester)
+        return("{\"Error\": \"User authentication fails!\"}")
+    # Log the query
+    timeOut = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    jSONout = '{\"Timestamp\" : \"' + timeOut + '\", \"Requester\": \"' + requester + '\", \"Query\": \"' + queryString + '\"}'
+
+
+    logToKafka(jSONout,kafka_topic)
+
     # Go out to the actual FHIR server
     print("request.method = " + request.method)
     dfBack, messageCode = read_from_fhir(queryString)
@@ -269,14 +356,33 @@ def getAll(queryString=None):
     ans, messageCode = apply_policy(dfBack, cmDict)
     return (json.dumps(ans))
 
+def logToKafka(jString, kafka_topic):
+    global producer
+
+    if kafkaDisabled:
+        print("Kafka topic: " + kafka_topic + " log string: " + jString)
+        print("But kafka is disabled...")
+        return
+    jSONoutBytes = str.encode(jString)
+    try:
+        print("Writing to Kafka queue " + kafka_topic + ": " + jString)
+        producer.send(kafka_topic, value=jSONoutBytes)  # to the SIEM
+    except Exception as e:
+        print("Write to Kafka failed.  Is the server on " + kafka_topic + " running?")
+        print(e)
+
 def main():
     global cmDict
+    global kafkaDisabled
+    kafkaDisabled = True
+    global producer
 
     print("starting module!!")
 
     CM_PATH = '/etc/conf/conf.yaml' # from the "volumeMounts" parameter in templates/deployment.yaml
 
     cmReturn = ''
+    producer = connect_to_kafka()
 
     if not TEST:
         try:
@@ -284,6 +390,7 @@ def main():
                 cmReturn = yaml.safe_load(stream)
         except Exception as e:
             print(e.args)
+            time.sleep(180)  # on a error, give time to look at the formating in the /etc/conf/config.yaml file
             raise ValueError('Error reading from file! ' + CM_PATH)
         print('cmReturn = ', cmReturn)
     if TEST:
