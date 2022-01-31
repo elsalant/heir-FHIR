@@ -31,7 +31,7 @@ kubectl port-forward svc/ibmfhir -n fybrik-system 9443:9443
 - b) Port-forward pod in fybrik-blueprints  
  kubectl get pods -n fybrik-blueprints  
 eg: kubectl port-forward pod/\<POD ID> -n fybrik-blueprints 5559:5559
-- c) curl -X GET -H 'Accept: */*' -H 'Accept-Encoding: gzip, deflate' -H 'Authorization: Basic ZmhpcnVzZXI6Y2hhbmdlLXBhc3N3b3Jk' -H 'Connection: keep-alive' -H 'User-Agent: python-requests/2.27.1' https://ibmfhir.fybrik-system:9443/fhir-server/api/v4/Observation
+- c) curl -X GET -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJIRUlSIHRlc3QiLCJpYXQiOjE2NDM2MTQ3NzQsImV4cCI6MTczODMwOTIwNCwiYXVkIjoiTk9LTFVTIiwic3ViIjoiaGVpci13cDItdGVzdCIsIkdpdmVuTmFtZSI6IkVsaW90IiwiU3VybmFtZSI6IlNhbGFudCIsIkVtYWlsIjoic2FsYW50QGlsLmlibS5jb20iLCJSb2xlIjpbIk1hbmFnZXIiLCJQcm9qZWN0IEFkbWluaXN0cmF0b3IiXX0.WxBSdu7xe9LIsu_MlzX3spmvQmQpRm8MFK0d19eW_no" http://localhost:5559/Observation
 - To load Observations:  
   docker run --network host ghcr.io/elsalant/observation-generator:v1
 (NOTE: On MacOS, the "--network" switch may not work.  In that case, it might be easiest to port-forward the fhir server and 
