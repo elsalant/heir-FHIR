@@ -37,8 +37,8 @@ DEFAULT_KAKFA_HOST = 'kafka.fybrik-system:9092'
 kafka_host = os.getenv("HEIR_KAFKA_HOST") if os.getenv("HEIR_KAFKA_HOST") else DEFAULT_KAKFA_HOST
 kafka_topic = os.getenv("HEIR_KAFKA_TOPIC") if os.getenv("HEIR_KAFKA_TOPIC") else DEFAULT_KAFKA_TOPIC
 
-FIXED_SCHEMA_ROLE = 'realm_access.roles'
-FIXED_SCHEMA_ORG = 'realm_access.organization'
+FIXED_SCHEMA_ROLE = 'Role'
+FIXED_SCHEMA_ORG = 'aud'  # Use the audience role?
 
 DEFAULT_TIMEWINDOW = 3560  # days - should be 14
 HIGH_THRESHOLD_DEFAULT = 8.3
@@ -318,6 +318,8 @@ def getAll(queryString=None):
     payloadEncrypted = request.headers.get('Authorization')
     organization = None
     role = None
+    givenName = 'None'
+    surName = 'None'
     if (payloadEncrypted != None):
         noJWT = False
         roleKey = os.getenv("SCHEMA_ROLE") if os.getenv("SCHEMA_ROLE") else FIXED_SCHEMA_ROLE
@@ -327,19 +329,31 @@ def getAll(queryString=None):
         except:
             print("Error: no role in JWT!")
             role = 'ERROR NO ROLE!'
+        try:
+            givenName = decryptJWT(payloadEncrypted, 'GivenName')
+            surName = decryptJWT(payloadEncrypted, 'Surname')
+        except:
+            print("Error extracting Surname and/or GivenName")
         organization = decryptJWT(payloadEncrypted, organizationKey)
     if (noJWT):
+        print("No JWT passed!")
         role = request.headers.get('role')  # testing only
     if (role == None):
         role = 'ERROR NO ROLE!'
     if (organization == None):
         organization = 'NO ORGANIZATION'
-    print('role = ', role, " organization = ", organization)
+    print('Surname = ' + surName + ' GivenName = ' + givenName + 'role = ', role, " organization = ", organization)
 #   Role in JWT needs to match role of requestor from original FybrikApplication deployment
     requester = checkRequester()
-    if (role != requester):
-        print("role = "+ role + " requester (FybrikApplication) = " + requester)
-        return("{\"Error\": \"User authentication fails!\"}")
+    # Hack for testing without JWT
+    if (noJWT):
+        if (role != requester):
+            print("role " + role + " != " + requester)
+            return ("{\"Error\": \"User authentication fails!\"}")
+    else:
+        if (givenName+surName != requester):
+            print("givenName+surName = "+ givenName+surName + " requester (FybrikApplication) = " + requester)
+            return("{\"Error\": \"User authentication fails!\"}")
     # Log the query
     timeOut = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     jSONout = '{\"Timestamp\" : \"' + timeOut + '\", \"Requester\": \"' + requester + '\", \"Query\": \"' + queryString + '\"}'

@@ -5,7 +5,7 @@ metadata:
   namespace: sql-fhir
   labels:
     app: fhirnotebook
-    requestedBy: ESalant
+    requestedBy: EliotSalant
 spec:
   selector: 
     workloadSelector:
