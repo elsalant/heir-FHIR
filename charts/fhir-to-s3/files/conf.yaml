@@ -1,4 +1,7 @@
 data:
+{{- if .Values.labels }}
+   SUBMITTER: {{ get .Values.labels "requestedBy" | default "requester-missing" }}
+{{- end }}
 {{- if .Values.copy -}}
  {{- if .Values.copy.source.connection.fhir }}
    WP2_TOPIC: {{ .Values.copy.source.connection.fhir.kafka_topic_name }}

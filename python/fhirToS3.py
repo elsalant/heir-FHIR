@@ -24,6 +24,7 @@ from string import Template
 TEST = False
 
 DEFAULT_KAFKA_TOPIC = 'fhir-wp2'
+DEFAULT_KAKFA_LOG = 'fhir-wp2-logging'
 DEFAULT_KAKFA_HOST = 'kafka.fybrik-system:9092'
 if TEST:
     DEFAULT_FHIR_HOST = 'https://localhost:9443'
@@ -145,6 +146,7 @@ TEST_OBSERVATION = '{ \
 }'
 
 kafka_host = os.getenv("HEIR_KAFKA_HOST") if os.getenv("HEIR_KAFKA_HOST") else DEFAULT_KAKFA_HOST
+kafka_log_topic = os.getenv("HEIR_KAFKA_LOG") if os.getenv("HEIR_KAFKA_LOG") else DEFAULT_KAKFA_LOG
 fhir_host = os.getenv("HEIR_FHIR_HOST") if os.getenv("HEIR_FHIR_HOST") else DEFAULT_FHIR_HOST
 fhir_user = os.getenv("HEIR_FHIR_USER") if os.getenv("HEIR_FHIR_USER") else DEFAULT_FHIR_USER
 fhir_pw = os.getenv("HEIR_FHIR_PW") if os.getenv("HEIR_FHIR_PW") else DEFAULT_FHIR_PW
@@ -408,6 +410,9 @@ def read_and_process_from_kafka(consumer, cmDict):
             df = read_from_fhir(id)
             filteredDF = timeWindow_filter(df)
             redacted_df = apply_policy(filteredDF, policies)
+            timeOut = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            jSONout = '{\"Timestamp\" : \"' + timeOut + '\", \"Requester\": \"' + cmDict['SUBMITTER'] + '\", \"Query\": \"Statistics\"}'
+            logToKafka(jSONout, kafka_log_topic)
 
 def output_results_csv(patientId, outvalues):
     with open('noklus_patient_observation_template.xml', 'r') as f:
@@ -420,6 +425,17 @@ def output_results_csv(patientId, outvalues):
 
 def output_results_parquet(patientID, outvalues):
     pass
+
+def logToKafka(jString, kafka_topic):
+    global producer
+
+    jSONoutBytes = str.encode(jString)
+    try:
+        print("Writing to Kafka queue " + kafka_topic + ": " + jString)
+        producer.send(kafka_topic, value=jSONoutBytes)  # to the SIEM
+    except Exception as e:
+        print("Write to Kafka failed.  Is the server on " + kafka_topic + " running?")
+        print(e)
 
 def main():
     global connection

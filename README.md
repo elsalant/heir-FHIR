@@ -3,6 +3,7 @@ the IBM FHIR server, performs statisical analysis on it, and writes the data out
 Note that the FHIR server has been modified to include interceptor code to write received 
 Observation records out to a Kafka queue.  The Fybrik module will read from the Kafka queue, and 
 retrieve the 2 week snapshot data based on the id in the received Observation.
+Logging information is written to the Kafka topic: 'fhir-wp2-logging'
 
 Do once:
 > Clone these files:  
@@ -61,3 +62,11 @@ To package and push a chart:
 from the charts directory:  
 - helm package ibmfhir_server -d /tmp
 - helm push /tmp/ibmfhir_server-0.2.0.tgz oci://ghcr.io/elsalant
+- helm package fhir-to-s3 -d /tmp
+- helm push /tmp/fhir-to-s3-chart-0.0.2.tgz oci://ghcr.io/elsalant
+
+To rebuild the Docker container with the fhirToS3.py code:
+From the python directory:
+- make docker-build
+- make docker-push
+

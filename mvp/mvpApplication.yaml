@@ -5,6 +5,7 @@ metadata:
   namespace: mvp
   labels:
     app: mvp-notebook
+    requestedBy: EliotSalant
 spec:
   selector: 
     workloadSelector: {} 
