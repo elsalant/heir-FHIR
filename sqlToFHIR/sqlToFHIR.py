@@ -22,7 +22,7 @@ ACCESS_DENIED_CODE = 403
 ERROR_CODE = 406
 VALID_RETURN = 200
 
-TEST = True   # allows testing outside of Fybrik/Kubernetes environment
+TEST = False   # allows testing outside of Fybrik/Kubernetes environment
 
 if TEST:
     DEFAULT_FHIR_HOST = 'https://localhost:9443/fhir-server/api/v4/'
@@ -312,7 +312,7 @@ def timeWindow_filter(df):
 # Catch anything
 @app.route('/<path:queryString>',methods=['GET', 'POST', 'PUT'])
 def getAll(queryString=None):
-#    global cmDict
+    global cmDict
     print("queryString = " + queryString)
     print('request.url = ' + request.url)
 
@@ -351,18 +351,19 @@ def getAll(queryString=None):
     timeOut = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     # Hack for testing without JWT
     queryRequester = role if noJWT else givenName+surName
+    assetID = dict(cmDict['dict_item'])['assetID'] if TEST else cmDict['assetID']
     if (queryRequester != requester):
         print("queryRequester " + queryRequester + " != " + requester)
         jSONout = '{\"Timestamp\" : \"' + timeOut + '\", \"Requester\": \"' + queryRequester + '\", \"Query\": \"' + queryString + \
                     '\", \"ClientIP\": \"' + str(request.remote_addr) + '\",' + \
-                  '\"assetID": \"' + dict(cmDict['dict_item'])['assetID'] + '\",' + \
+                  '\"assetID": \"' + assetID + '\",' + \
                   '\", \"Outcome": \"UNAUTHORIZED\"}'
         logToKafka(jSONout, kafka_topic)
         return ("{\"Error\": \"User authentication fails!\"}")
     # Log the query request
     jSONout = '{\"Timestamp\" : \"' + timeOut + '\", \"Requester\": \"' + requester + '\", \"Query\": \"' + queryString + '\",' + \
             '\"ClientIP\": \"' + str(request.remote_addr) + '\",' + \
-              '\"assetID": \"' + dict(cmDict['dict_item'])['assetID'] + '\",' + \
+              '\"assetID": \"' + assetID + '\",' + \
               '\"Outcome": \"UNAUTHORIZED\"}'
     logToKafka(jSONout,kafka_topic)
 
