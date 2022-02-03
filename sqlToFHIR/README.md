@@ -65,9 +65,8 @@ Package the chart:
 helm package ibmfhir-orig -d /tmp
 Push to repo: 
 helm push /tmp/ibmfhir_orig-0.2.0.tgz oci://ghcr.io/elsalant
-
-[IS THIS NEEDED??] Update the index:  
-helm repo index --url https://ghcr.io/elsalant/ --merge index.yaml .
+helm package sqlToFHIR -d /tmp
+helm push /tmp//tmp/sql-to-fhir-chart-0.0.5.tgz oci://ghcr.io/elsalant
 
 ##### Development hints
 1. files/conf.yaml controls the format of the policy evaluation.  This will be written into a file mounted inside the pod running in the fybrik-blueprints namespace.

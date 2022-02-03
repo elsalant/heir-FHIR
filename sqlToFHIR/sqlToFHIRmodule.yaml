@@ -30,7 +30,7 @@ spec:
             protocol: fhir
             dataformat: json
   chart:
-    name: ghcr.io/elsalant/sql-to-fhir-chart:0.0.5
+    name: ghcr.io/elsalant/sql-to-fhir-chart:0.0.6
     values:
       image.tag: v4
   statusIndicators:

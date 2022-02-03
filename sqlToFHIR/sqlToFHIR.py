@@ -22,7 +22,7 @@ ACCESS_DENIED_CODE = 403
 ERROR_CODE = 406
 VALID_RETURN = 200
 
-TEST = False   # allows testing outside of Fybrik/Kubernetes environment
+TEST = True   # allows testing outside of Fybrik/Kubernetes environment
 
 if TEST:
     DEFAULT_FHIR_HOST = 'https://localhost:9443/fhir-server/api/v4/'
@@ -89,7 +89,10 @@ def handleQuery(queryGatewayURL, queryString, auth, params, method):
     return (returnList)
 
 def checkRequester():
-    requester = cmDict['SUBMITTER']
+    if TEST:
+        requester = 'EliotSalant'
+    else:
+        requester = cmDict['SUBMITTER']
     print("SUBMITTER = " + requester)
     return(requester)
 
@@ -309,7 +312,7 @@ def timeWindow_filter(df):
 # Catch anything
 @app.route('/<path:queryString>',methods=['GET', 'POST', 'PUT'])
 def getAll(queryString=None):
-    global cmDict
+#    global cmDict
     print("queryString = " + queryString)
     print('request.url = ' + request.url)
 
@@ -344,21 +347,23 @@ def getAll(queryString=None):
         organization = 'NO ORGANIZATION'
     print('Surname = ' + surName + ' GivenName = ' + givenName + 'role = ', role, " organization = ", organization)
 #   Role in JWT needs to match role of requestor from original FybrikApplication deployment
-    requester = checkRequester()
-    # Hack for testing without JWT
-    if (noJWT):
-        if (role != requester):
-            print("role " + role + " != " + requester)
-            return ("{\"Error\": \"User authentication fails!\"}")
-    else:
-        if (givenName+surName != requester):
-            print("givenName+surName = "+ givenName+surName + " requester (FybrikApplication) = " + requester)
-            return("{\"Error\": \"User authentication fails!\"}")
-    # Log the query
+    requester = checkRequester()  # from the FybrikApplication
     timeOut = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    jSONout = '{\"Timestamp\" : \"' + timeOut + '\", \"Requester\": \"' + requester + '\", \"Query\": \"' + queryString + '\"}'
-
-
+    # Hack for testing without JWT
+    queryRequester = role if noJWT else givenName+surName
+    if (queryRequester != requester):
+        print("queryRequester " + queryRequester + " != " + requester)
+        jSONout = '{\"Timestamp\" : \"' + timeOut + '\", \"Requester\": \"' + queryRequester + '\", \"Query\": \"' + queryString + \
+                    '\", \"ClientIP\": \"' + str(request.remote_addr) + '\",' + \
+                  '\"assetID": \"' + dict(cmDict['dict_item'])['assetID'] + '\",' + \
+                  '\", \"Outcome": \"UNAUTHORIZED\"}'
+        logToKafka(jSONout, kafka_topic)
+        return ("{\"Error\": \"User authentication fails!\"}")
+    # Log the query request
+    jSONout = '{\"Timestamp\" : \"' + timeOut + '\", \"Requester\": \"' + requester + '\", \"Query\": \"' + queryString + '\",' + \
+            '\"ClientIP\": \"' + str(request.remote_addr) + '\",' + \
+              '\"assetID": \"' + dict(cmDict['dict_item'])['assetID'] + '\",' + \
+              '\"Outcome": \"UNAUTHORIZED\"}'
     logToKafka(jSONout,kafka_topic)
 
     # Go out to the actual FHIR server
@@ -409,7 +414,7 @@ def main():
         print('cmReturn = ', cmReturn)
     if TEST:
         cmDict = {'dict_item': [('transformations', [{'action': 'RedactColumn', 'description': 'redact columns: [valueQuantity.value id]',
-             'columns': ['valueQuantity.value', 'id'], 'options': {'redactValue': 'XXXXX'}}])]}
+             'columns': ['valueQuantity.value', 'id'], 'options': {'redactValue': 'XXXXX'}}]), ('assetID', 'sql-fhir/observation-json')]}
    #     cmDict = {'dict_item': [('transformations', [{'action': 'RedactColumn', 'description': 'redacting columns: Patient', 'columns': ['Patient'], 'options': {'redactValue': 'XXXXX'}}])]}
    #     cmDict = {'dict_item': [('transformations', [{'action': 'RedactColumn', 'description': 'redacting columns: ',
    #                                               'columns': ['valueQuantity.value','subject.display', 'text.div', 'subject.reference'],
