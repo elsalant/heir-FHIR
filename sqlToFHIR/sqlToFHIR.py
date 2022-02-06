@@ -351,7 +351,7 @@ def getAll(queryString=None):
     timeOut = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     # Hack for testing without JWT
     queryRequester = role if noJWT else givenName+surName
-    assetID = dict(cmDict['dict_item'])['assetID'] if TEST else dict(cmDict['dict_item'])['assetID']
+    assetID = dict(cmDict['dict_item'])['assetID'] if TEST else cmDict['assetID']
     intent = 'Not given'
     for i in dict(cmDict['dict_item'])['transformations']:
         if 'intent' in i:
