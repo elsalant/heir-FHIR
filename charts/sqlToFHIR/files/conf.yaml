@@ -12,6 +12,9 @@ data:
    SECRET_NSPACE: {{ .source.connection.fhir.namespace }}
    SECRET_FNAME: {{ .source.connection.fhir.secretRef }}
   {{- end }}
+  {{- if .assetID }}
+   assetID: {{ .assetID }}
+  {{- end }}
   {{- if .transformations }}
    transformations:
    {{- $redactColumns := list -}}
@@ -19,7 +22,7 @@ data:
    {{- $removeColumns := list -}}
    {{- $blockColumns := list -}}
    {{- range .transformations }}
-     {{- if eq .name "RemoveColumn" -}}
+     {{- if eq .name "RemoveColumn" }}
        {{- $removeColumns = .RemoveColumn.columns }}
          - action: "RemoveColumn"
            description: "Remove columns: {{ $removeColumns }}"
@@ -28,7 +31,7 @@ data:
              - {{ . }}
              {{- end }}
      {{- end -}}
-     {{- if eq .name "Statistics" -}}
+     {{- if eq .name "Statistics" }}
        {{- $statisticsColumn = .Statistics.columns }}
        - action: "Statistics"
          description: "Perform statistical analysis on: {{ $statisticsColumn }}"
@@ -37,7 +40,7 @@ data:
            - {{ . }}
            {{- end }}
      {{- end -}}
-     {{- if eq .name "BlockResource" -}}
+     {{- if eq .name "BlockResource" }}
        {{- $blockColumns = .BlockResource.columns }}
        - action: "BlockResource"
          description: "Block all data for resource: {{ $blockColumns }}"
@@ -46,10 +49,17 @@ data:
            - {{ . }}
            {{- end }}
      {{- end -}}
+     {{- if eq .name "ReturnIntent" }}
+       - action: "ReturnIntent"
+         description: "Return the Intent value from the application"
+         intent: {{ .ReturnIntent.intent }}
+         columns: "N/A"
+     {{- end -}}
      {{- if eq .name "RedactColumn" -}}
        {{- $redactColumns = .RedactColumn.columns }}
        - action: "RedactColumn"
          description: "redact columns: {{ $redactColumns }}"
+         intent: {{ .RedactColumn.intent }}
          columns:
            {{- range $redactColumns}}
            - {{ . }}

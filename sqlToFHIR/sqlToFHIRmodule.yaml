@@ -18,6 +18,7 @@ spec:
         - name: RedactColumn
         - name: Statistics
         - name: BlockResource
+        - name: ReturnIntent
       api:
         connection:
           name: fhir

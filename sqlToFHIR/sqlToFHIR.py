@@ -351,20 +351,24 @@ def getAll(queryString=None):
     timeOut = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     # Hack for testing without JWT
     queryRequester = role if noJWT else givenName+surName
-    assetID = dict(cmDict['dict_item'])['assetID'] if TEST else cmDict['assetID']
+    assetID = dict(cmDict['dict_item'])['assetID'] if TEST else dict(cmDict['dict_item'])['assetID']
+    intent = 'Not given'
+    for i in dict(cmDict['dict_item'])['transformations']:
+        if 'intent' in i:
+            intent = i['intent']
     if (queryRequester != requester):
         print("queryRequester " + queryRequester + " != " + requester)
         jSONout = '{\"Timestamp\" : \"' + timeOut + '\", \"Requester\": \"' + queryRequester + '\", \"Query\": \"' + queryString + \
                     '\", \"ClientIP\": \"' + str(request.remote_addr) + '\",' + \
                   '\"assetID": \"' + assetID + '\",' + \
-                  '\", \"Outcome": \"UNAUTHORIZED\"}'
+                  '\", \"intent\": \"' + intent +'\", \"Outcome": \"UNAUTHORIZED\"}'
         logToKafka(jSONout, kafka_topic)
         return ("{\"Error\": \"User authentication fails!\"}")
     # Log the query request
     jSONout = '{\"Timestamp\" : \"' + timeOut + '\", \"Requester\": \"' + requester + '\", \"Query\": \"' + queryString + '\",' + \
             '\"ClientIP\": \"' + str(request.remote_addr) + '\",' + \
               '\"assetID": \"' + assetID + '\",' + \
-              '\"Outcome": \"UNAUTHORIZED\"}'
+              '\"intent\": \"' + intent +'\",\"Outcome": \"UNAUTHORIZED\"}'
     logToKafka(jSONout,kafka_topic)
 
     # Go out to the actual FHIR server
@@ -414,8 +418,13 @@ def main():
             raise ValueError('Error reading from file! ' + CM_PATH)
         print('cmReturn = ', cmReturn)
     if TEST:
-        cmDict = {'dict_item': [('transformations', [{'action': 'RedactColumn', 'description': 'redact columns: [valueQuantity.value id]',
-             'columns': ['valueQuantity.value', 'id'], 'options': {'redactValue': 'XXXXX'}}]), ('assetID', 'sql-fhir/observation-json')]}
+        cmDict = {'dict_item': [
+            ('transformations', [{'action': 'RedactColumn', 'description': 'redact columns: [valueQuantity.value id]',
+            'columns': ['valueQuantity.value', 'id'], 'options': {'redactValue': 'XXXXX'}},
+            {'action': 'ReturnIntent', 'description': 'return intent',
+            'columns': ['N/A'], 'intent': 'research'}]), ('assetID', 'sql-fhir/observation-json')]}
+   #     cmDict = {'dict_item': [('transformations', [{'action': 'RedactColumn', 'description': 'redact columns: [valueQuantity.value id]',
+   #          'columns': ['valueQuantity.value', 'id'], 'options': {'redactValue': 'XXXXX'}}]), ('assetID', 'sql-fhir/observation-json')]}
    #     cmDict = {'dict_item': [('transformations', [{'action': 'RedactColumn', 'description': 'redacting columns: Patient', 'columns': ['Patient'], 'options': {'redactValue': 'XXXXX'}}])]}
    #     cmDict = {'dict_item': [('transformations', [{'action': 'RedactColumn', 'description': 'redacting columns: ',
    #                                               'columns': ['valueQuantity.value','subject.display', 'text.div', 'subject.reference'],

@@ -12,7 +12,7 @@ spec:
       matchLabels:  
         app: fhirnotebook 
   appInfo:
-   intent: sql-fhir-demo
+   intent: research
   data:
     - dataSetID: "sql-fhir/observation-json"
       requirements:
