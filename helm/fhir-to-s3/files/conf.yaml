@@ -1,5 +1,8 @@
 data:
 {{- if .Values.copy -}}
+ {{- if .Values.labels }}
+   SUBMITTER: {{ get .Values.labels "requestedBy" | default "requester-missing" }}
+ {{- end }}
  {{- if .Values.copy.source.connection.kafka }}
    WP2_TOPIC: {{ .Values.copy.source.connection.kafka.topic_name }}
    HEIR_KAFKA_HOST: {{ .Values.copy.source.connection.kafka.bootstrap_servers }}  
@@ -8,7 +11,7 @@ data:
    VAULT_SECRET_PATH: {{ .Values.copy.destination.vault.secretPath }}
    SECRET_NSPACE: {{ .Values.copy.destination.credentialLocation.namespace }}
    SECRET_FNAME: {{ .Values.copy.destination.credentialLocation.secret_file }}
-   S3_URL: {{if .Values.copy.destination.connection.s3.endpoint}}http://{{end}}{{ .Values.copy.destination.connection.s3.endpoint }}
+   S3_URL: {{ .Values.copy.destination.connection.s3.endpoint }}
  {{- end }}
  {{- if .Values.copy.transformations }}
    transformations: 
