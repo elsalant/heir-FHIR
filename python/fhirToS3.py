@@ -21,7 +21,7 @@ from curlCommands import handleQuery
 from datetime import date, datetime, timedelta, timezone
 from string import Template
 
-TEST = False
+TEST = True
 
 DEFAULT_KAFKA_TOPIC = 'fhir-wp2'
 DEFAULT_KAKFA_LOG = 'fhir-wp2-logging'
@@ -392,7 +392,7 @@ def read_and_process_from_kafka(consumer, cmDict):
                 continue
             # Extract the patient id
             try:
-                patient_id = resourceDict['subject][reference]']
+                patient_id = resourceDict['subject']['reference']
             except:
                 patient_id = resourceDict['subject_reference']   #flattened schema
             print('patient_id = ', str(patient_id))
